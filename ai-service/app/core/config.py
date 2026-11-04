@@ -8,8 +8,8 @@ class Settings(BaseSettings):
     INTERNAL_API_KEY: str = Field(default="LM_Internal_Key_987654")
     
     # LLM Settings
-    LLM_PROVIDER: str = Field(default="openai")
-    LLM_MODEL: str = Field(default="gpt-4o-mini")
+    LLM_PROVIDER: str = Field(default="gemini")
+    LLM_MODEL: str = Field(default="gemini-3.5-flash-lite")
     OPENAI_API_KEY: Optional[str] = Field(default=None)
     GEMINI_API_KEY: Optional[str] = Field(default=None)
     

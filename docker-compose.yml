@@ -29,8 +29,8 @@ services:
     container_name: learnmate_ai
     restart: always
     environment:
-      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
-      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
+      - LLM_MODEL=${LLM_MODEL:-gemini-3.5-flash-lite}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-LM_Internal_Key_987654}
