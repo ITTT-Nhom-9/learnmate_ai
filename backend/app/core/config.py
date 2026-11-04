@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, model_validator
 from typing import Optional
 
 
@@ -7,10 +7,21 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "LearnMate AI - Backend Core"
     API_V1_STR: str = "/api/v1"
     
-    # Database
-    DATABASE_URL: str = Field(
-        default="mysql+pymysql://learnmate_user:learnmate_pass@localhost:3307/learnmate?charset=utf8mb4"
-    )
+    # Database Settings
+    DB_USER: str = Field(default="learnmate_user")
+    DB_PASSWORD: str = Field(default="your_secure_password")
+    DB_NAME: str = Field(default="learnmate")
+    MYSQL_HOST_PORT: int = Field(default=3307)
+    DATABASE_URL: Optional[str] = None
+    
+    @model_validator(mode="after")
+    def assemble_db_connection(self) -> "Settings":
+        if not self.DATABASE_URL:
+            self.DATABASE_URL = (
+                f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}"
+                f"@localhost:{self.MYSQL_HOST_PORT}/{self.DB_NAME}?charset=utf8mb4"
+            )
+        return self
     
     # Security & JWT
     JWT_SECRET: str = Field(default="YourSuperSecretKeyMin32Chars2026!")

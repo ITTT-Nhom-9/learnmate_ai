@@ -1,7 +1,21 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.core.database import Base, engine
+import app.models  # Đăng ký toàn bộ 7 bảng ORM vào Base.metadata
 from app.api.api_v1 import api_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Tự động tạo các bảng CSDL nếu chưa tồn tại khi khởi động backend
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        print(f"Lưu ý: Không thể tự động tạo bảng (có thể do CSDL chưa khởi động): {e}")
+    yield
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -9,7 +23,8 @@ app = FastAPI(
     description="LearnMate AI - Backend Core Service API",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc"
+    redoc_url=f"{settings.API_V1_STR}/redoc",
+    lifespan=lifespan
 )
 
 # CORS Middleware
