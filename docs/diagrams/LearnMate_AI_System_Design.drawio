@@ -1,0 +1,106 @@
+<mxfile host="app.diagrams.net" modified="2026-11-01T13:55:00.000Z" agent="LearnMate-AI-BA" version="22.0.0" type="device">
+  <diagram id="diag-arch" name="1. Kien_Truc_Tong_The">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="box-docker" value="HẠ TẦNG TRIỂN KHAI (DOCKER COMPOSE - BRIDGE NETWORK)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1080" height="720" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-fe" value="TẦNG TRÌNH DIỄN (FRONTEND)&lt;br&gt;&lt;b&gt;ReactJS 18 + Vite SPA&lt;/b&gt;&lt;br&gt;Tailwind CSS + Lucide Icons&lt;br&gt;TanStack Query + Axios (JWT)&lt;br&gt;KaTeX + React-Markdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f497d;strokeWidth=2;fontSize=12;fontColor=#1e293b;" vertex="1" parent="1">
+          <mxGeometry x="80" y="140" width="280" height="280" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-be" value="TẦNG NGHIỆP VỤ (BACKEND CORE)&lt;br&gt;&lt;b&gt;Python 3.11 + FastAPI&lt;/b&gt;&lt;br&gt;OAuth2 Password Bearer (PyJWT)&lt;br&gt;MasteryService &amp; SocraticEngine&lt;br&gt;QuotaGuard (50 req/ngày)&lt;br&gt;SQLAlchemy 2.0 ORM + Alembic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f497d;strokeWidth=2;fontSize=12;fontColor=#1e293b;" vertex="1" parent="1">
+          <mxGeometry x="440" y="140" width="310" height="280" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-ai" value="TẦNG AI MICROSERVICE&lt;br&gt;&lt;b&gt;Python 3.11 + FastAPI&lt;/b&gt;&lt;br&gt;FastAPI Router (Stateless /ai)&lt;br&gt;Pydantic Schema Validation&lt;br&gt;Prompt Templates Engine&lt;br&gt;OpenAI / Gemini SDK Adapter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f497d;strokeWidth=2;fontSize=12;fontColor=#1e293b;" vertex="1" parent="1">
+          <mxGeometry x="830" y="140" width="260" height="280" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-db" value="TẦNG CƠ SỞ DỮ LIỆU&lt;br&gt;&lt;b&gt;MySQL 8.0 (utf8mb4)&lt;/b&gt;&lt;br&gt;21 bảng dữ liệu quan hệ chuẩn hóa 3NF&lt;br&gt;Kết nối SQLAlchemy Connection Pool nội bộ qua FastAPI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f497d;strokeWidth=2;fontSize=12;fontColor=#1e293b;" vertex="1" parent="1">
+          <mxGeometry x="440" y="500" width="310" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="card-llm" value="EXTERNAL LLM CLOUD SERVICES&lt;br&gt;&lt;b&gt;OpenAI GPT-4o / Google Gemini&lt;/b&gt;&lt;br&gt;Giao thức HTTPS REST / Streaming SSE&lt;br&gt;Quản lý API Key độc lập trong .env" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#475569;strokeWidth=2;dashed=1;fontSize=12;fontColor=#1e293b;" vertex="1" parent="1">
+          <mxGeometry x="830" y="500" width="260" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="conn-fe-be" value="REST / JSON (JWT)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1f497d;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="card-fe" target="card-be">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="conn-be-ai" value="Internal API (X-API-Key)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1f497d;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="card-be" target="card-ai">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="conn-be-db" value="SQLAlchemy / PyMySQL (Port 3306)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1f497d;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="card-be" target="card-db">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="conn-ai-llm" value="HTTPS API Call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#1f497d;strokeWidth=2;fontStyle=1;" edge="1" parent="1" source="card-ai" target="card-llm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="diag-erd" name="2. So_Do_ERD_21_Bang">
+    <mxGraphModel dx="1400" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="e0"/>
+        <mxCell id="e1" parent="e0"/>
+        <!-- 6 Subsystem Bounding Containers -->
+        <mxCell id="c1" value="PHÂN HỆ 1: NGƯỜI DÙNG &amp; XÁC THỰC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#cbd5e1;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=#1f497d;" vertex="1" parent="e1">
+          <mxGeometry x="40" y="40" width="380" height="400" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2" value="PHÂN HỆ 2: KHUNG CHƯƠNG TRÌNH &amp; BÀI HỌC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#cbd5e1;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=#1f497d;" vertex="1" parent="e1">
+          <mxGeometry x="460" y="40" width="480" height="400" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3" value="PHÂN HỆ 3: GIA SƯ AI TUTOR &amp; SOCRATIC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#cbd5e1;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=#1f497d;" vertex="1" parent="e1">
+          <mxGeometry x="980" y="40" width="380" height="400" as="geometry"/>
+        </mxCell>
+        <mxCell id="c4" value="PHÂN HỆ 4: LÕI THÍCH ỨNG &amp; TIẾN ĐỘ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#cbd5e1;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=#1f497d;" vertex="1" parent="e1">
+          <mxGeometry x="40" y="470" width="380" height="420" as="geometry"/>
+        </mxCell>
+        <mxCell id="c5" value="PHÂN HỆ 5: TRẮC NGHIỆM THÍCH ỨNG &amp; LƯỢT LÀM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#cbd5e1;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=#1f497d;" vertex="1" parent="e1">
+          <mxGeometry x="460" y="470" width="480" height="420" as="geometry"/>
+        </mxCell>
+        <mxCell id="c6" value="PHÂN HỆ 6: QUẢN TRỊ, LOG &amp; RAG TÀI LIỆU" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#cbd5e1;dashed=1;verticalAlign=top;fontStyle=1;fontSize=12;fontColor=#1f497d;" vertex="1" parent="e1">
+          <mxGeometry x="980" y="470" width="380" height="420" as="geometry"/>
+        </mxCell>
+
+        <!-- Entities in C1 -->
+        <mxCell id="t-users" value="&lt;b&gt;users&lt;/b&gt;&lt;hr&gt;PK id: BIGINT&lt;br&gt;email: VARCHAR(255) [UQ]&lt;br&gt;password_hash: VARCHAR(255)&lt;br&gt;full_name: VARCHAR(150)&lt;br&gt;role: ENUM('STUDENT','ADMIN')&lt;br&gt;status: ENUM('ACTIVE','LOCKED')" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334155;strokeWidth=1.5;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="e1">
+          <mxGeometry x="60" y="75" width="340" height="165" as="geometry"/>
+        </mxCell>
+        <mxCell id="t-tokens" value="&lt;b&gt;refresh_tokens&lt;/b&gt;&lt;hr&gt;PK id: BIGINT&lt;br&gt;FK user_id: BIGINT -&gt; users(id)&lt;br&gt;token_hash: VARCHAR(255) [UQ]&lt;br&gt;expires_at, revoked_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334155;strokeWidth=1.5;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="e1">
+          <mxGeometry x="60" y="285" width="340" height="125" as="geometry"/>
+        </mxCell>
+
+        <!-- Entities in C2 -->
+        <mxCell id="t-enroll" value="&lt;b&gt;enrollments&lt;/b&gt;&lt;hr&gt;PK id: BIGINT&lt;br&gt;FK user_id -&gt; users(id)&lt;br&gt;FK course_id -&gt; courses(id)&lt;br&gt;[UQ: user_id, course_id]&lt;br&gt;enrolled_at, status" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334155;strokeWidth=1.5;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="e1">
+          <mxGeometry x="480" y="75" width="210" height="145" as="geometry"/>
+        </mxCell>
+        <mxCell id="t-courses" value="&lt;b&gt;courses&lt;/b&gt;&lt;hr&gt;PK id: BIGINT&lt;br&gt;code: VARCHAR(20) [UQ]&lt;br&gt;title: VARCHAR(200)&lt;br&gt;description: TEXT&lt;br&gt;status, created_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334155;strokeWidth=1.5;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="e1">
+          <mxGeometry x="710" y="75" width="210" height="145" as="geometry"/>
+        </mxCell>
+        <mxCell id="t-topics" value="&lt;b&gt;topics&lt;/b&gt;&lt;hr&gt;PK id: BIGINT&lt;br&gt;FK lesson_id -&gt; lessons(id)&lt;br&gt;name: VARCHAR(150)&lt;br&gt;description: TEXT&lt;br&gt;order_index: INT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334155;strokeWidth=1.5;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="e1">
+          <mxGeometry x="480" y="270" width="210" height="145" as="geometry"/>
+        </mxCell>
+        <mxCell id="t-lessons" value="&lt;b&gt;lessons&lt;/b&gt;&lt;hr&gt;PK id: BIGINT&lt;br&gt;FK course_id -&gt; courses(id)&lt;br&gt;title: VARCHAR(200)&lt;br&gt;order_index: INT&lt;br&gt;lesson_contents (1:N)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334155;strokeWidth=1.5;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="e1">
+          <mxGeometry x="710" y="270" width="210" height="145" as="geometry"/>
+        </mxCell>
+
+        <!-- Entities in C3 -->
+        <mxCell id="t-chatsess" value="&lt;b&gt;chat_sessions&lt;/b&gt;&lt;hr&gt;PK id: BIGINT&lt;br&gt;FK user_id -&gt; users(id)&lt;br&gt;FK lesson_id -&gt; lessons(id)&lt;br&gt;mode: ENUM('EXPLAIN','SOCRATIC')&lt;br&gt;hint_level: INT (0..5), wrong_streak&lt;br&gt;status, created_at, updated_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334155;strokeWidth=1.5;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="e1">
+          <mxGeometry x="1000" y="75" width="340" height="155" as="geometry"/>
+        </mxCell>
+        <mxCell id="t-chatmsg" value="&lt;b&gt;chat_messages&lt;/b&gt;&lt;hr&gt;PK id: BIGINT&lt;br&gt;FK session_id -&gt; chat_sessions(id)&lt;br&gt;role: ENUM('USER','ASSISTANT')&lt;br&gt;content: LONGTEXT&lt;br&gt;tokens_used: INT, created_at" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334155;strokeWidth=1.5;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="e1">
+          <mxGeometry x="1000" y="275" width="340" height="135" as="geometry"/>
+        </mxCell>
+
+        <!-- Connectors -->
+        <mxCell id="e-u-tok" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1e293b;strokeWidth=1.8;" edge="1" parent="e1" source="t-users" target="t-tokens"/>
+        <mxCell id="e-u-enr" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1e293b;strokeWidth=1.8;" edge="1" parent="e1" source="t-users" target="t-enroll"/>
+        <mxCell id="e-c-enr" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1e293b;strokeWidth=1.8;" edge="1" parent="e1" source="t-courses" target="t-enroll"/>
+        <mxCell id="e-c-les" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1e293b;strokeWidth=1.8;" edge="1" parent="e1" source="t-courses" target="t-lessons"/>
+        <mxCell id="e-l-top" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1e293b;strokeWidth=1.8;" edge="1" parent="e1" source="t-lessons" target="t-topics"/>
+        <mxCell id="e-l-cht" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1e293b;strokeWidth=1.8;" edge="1" parent="e1" source="t-lessons" target="t-chatsess"/>
+        <mxCell id="e-s-msg" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1e293b;strokeWidth=1.8;" edge="1" parent="e1" source="t-chatsess" target="t-chatmsg"/>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
