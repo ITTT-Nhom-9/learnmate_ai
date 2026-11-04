@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     DB_USER: str = Field(default="learnmate_user")
     DB_PASSWORD: str = Field(default="your_secure_password")
     DB_NAME: str = Field(default="learnmate")
-    MYSQL_HOST_PORT: int = Field(default=3307)
+    MYSQL_HOST_PORT: int = Field(default=3306)
     DATABASE_URL: Optional[str] = None
     
     @model_validator(mode="after")
