@@ -3,24 +3,32 @@
 Dự án: LearnMate AI - Hệ thống Gia sư Hỏi đáp Socratic & Học tập Thích ứng
 Tệp: learnmate_ai/scripts/seed_mock_data.py
 Mã Task: TK-03 | Phân hệ 2: Dữ liệu mẫu (Tầng Nghiệp vụ BA)
-Người phụ trách: Huỳnh Quốc Huy - MSSV: N25DTCN127 (Deadline: 04/11/2026)
-Database mục tiêu: seed_mock_data
-Mô tả: Tự động kiểm tra kết nối MySQL 8.0, khởi tạo database `seed_mock_data`,
-       tạo 4 bảng (courses, lessons, topics, lesson_contents), nạp dữ liệu mẫu
-       (2 môn học CNTT, 8 bài học, 16 chủ đề lý thuyết) và in báo cáo kiểm thử.
+Database mục tiêu: learnmate
+Mô tả: Tạo schema theo ORM backend, nạp 2 môn học, 8 bài học, 16 chủ đề,
+       16 nội dung và in báo cáo kiểm thử.
 """
 
 import argparse
 import logging
+import os
+import re
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
-import pymysql
-import sqlalchemy
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Connection, Engine, URL
+from dotenv import load_dotenv
+from sqlalchemy import create_engine, func, select
+from sqlalchemy.engine import Engine, URL
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+BACKEND_DIR = ROOT_DIR / "backend"
+sys.path.insert(0, str(BACKEND_DIR))
+load_dotenv(ROOT_DIR / ".env")
+
+from app.models import Base, Course, Lesson, LessonContent, Topic
 
 # ==============================================================================
 # CẤU HÌNH LOGGING
@@ -39,94 +47,73 @@ logger = logging.getLogger("seed_mock_data")
 # 2. CẤU HÌNH VÀ KHỞI TẠO KẾT NỐI MYSQL
 # ==============================================================================
 
-TARGET_DB_NAME = "seed_mock_data"
-
-MYSQL_CONFIG = {
-    "user": "root",
-    "password": "",
-    "host": "127.0.0.1",
-    "port": 3306,
-    "database": TARGET_DB_NAME,
-}
+TARGET_DB_NAME = os.getenv("DB_NAME", "learnmate")
+DB_USER = os.getenv("DB_USER", "learnmate_user")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "learnmate_pass")
+DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+DB_PORT = int(os.getenv("MYSQL_HOST_PORT", "3307"))
+DB_ROOT_USER = os.getenv("DB_ROOT_USER", "root")
+DB_ROOT_PASSWORD = os.getenv("DB_ROOT_PASSWORD")
 
 
-def get_mysql_connection_params() -> dict[str, Any]:
-    """Lấy cấu hình kết nối MySQL, không sử dụng mật khẩu."""
-    return MYSQL_CONFIG.copy()
+def get_mysql_connection_params(args: argparse.Namespace | None = None) -> dict[str, Any]:
+    """Lấy cấu hình MySQL từ môi trường, có thể ghi đè bằng tham số CLI."""
+    return {
+        "user": getattr(args, "user", DB_USER),
+        "password": getattr(args, "password", DB_PASSWORD),
+        "host": getattr(args, "host", DB_HOST),
+        "port": getattr(args, "port", DB_PORT),
+        "database": getattr(args, "database", TARGET_DB_NAME),
+        "root_user": getattr(args, "root_user", DB_ROOT_USER),
+        "root_password": getattr(args, "root_password", DB_ROOT_PASSWORD),
+    }
 
 
-def create_database_if_not_exists(params: dict[str, Any]) -> URL:
-    """
-    Kiểm tra MySQL Server và tạo database nếu chưa tồn tại.
-    Database luôn được cố định là seed_mock_data.
-    """
+def create_database_if_not_exists(params: dict[str, Any]) -> None:
+    """Tạo database mục tiêu bằng tài khoản quản trị MySQL nếu cần."""
+    database_name = params["database"]
+    if not re.fullmatch(r"[A-Za-z0-9_]+", database_name):
+        raise ValueError("Tên database chỉ được chứa chữ, số và dấu gạch dưới.")
 
-    logger.info(
-        "Bước 1/4: Kiểm tra kết nối MySQL Server tại %s:%s...",
-        params["host"],
-        params["port"],
-    )
+    if not params["root_password"]:
+        return
 
     server_url = URL.create(
         drivername="mysql+pymysql",
-        username=params["user"],
-        password=params["password"],
+        username=params["root_user"],
+        password=params["root_password"],
         host=params["host"],
         port=params["port"],
         query={"charset": "utf8mb4"},
     )
-
     server_engine = create_engine(
         server_url,
         pool_pre_ping=True,
         connect_args={"connect_timeout": 10},
     )
-
     try:
-        with server_engine.connect() as conn:
-
-            # Kiểm tra kết nối MySQL
-            mysql_version = conn.execute(
-                text("SELECT VERSION();")
-            ).scalar_one()
-
-            logger.info(
-                "PASS: Kết nối MySQL thành công!"
+        with server_engine.begin() as conn:
+            conn.exec_driver_sql(
+                f"CREATE DATABASE IF NOT EXISTS `{database_name}` "
+                "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
             )
-            logger.info(
-                "Phiên bản MySQL: %s",
-                mysql_version,
-            )
-
-            # Tạo database nếu chưa tồn tại
-            conn.execute(
-                text(
-                    f"CREATE DATABASE IF NOT EXISTS `{TARGET_DB_NAME}` "
-                    "CHARACTER SET utf8mb4 "
-                    "COLLATE utf8mb4_unicode_ci"
-                )
-            )
-
-            logger.info(
-                "PASS: Database `%s` đã sẵn sàng.",
-                TARGET_DB_NAME,
-            )
-
     finally:
         server_engine.dispose()
 
-    # Tạo URL kết nối trực tiếp vào database mục tiêu
-    db_url = URL.create(
+    logger.info("PASS: Database `%s` đã sẵn sàng.", database_name)
+
+
+def create_database_url(params: dict[str, Any]) -> URL:
+    """Tạo URL SQLAlchemy cho database được chọn."""
+    return URL.create(
         drivername="mysql+pymysql",
         username=params["user"],
         password=params["password"],
         host=params["host"],
         port=params["port"],
-        database=TARGET_DB_NAME,
+        database=params["database"],
         query={"charset": "utf8mb4"},
     )
-
-    return db_url
 
 # ==============================================================================
 # 3. BỘ DỮ LIỆU MẪU CHUẨN NGHIỆP VỤ BA (2 MÔN HỌC, 8 BÀI HỌC, 16 CHỦ ĐỀ)
@@ -621,410 +608,294 @@ LESSON_CONTENTS_DATA: list[dict[str, Any]] = [
 
 
 # ==============================================================================
-# 4. KHỞI TẠO BẢNG, NẠP DỮ LIỆU VÀ KIỂM THỬ
+# 4. NẠP DỮ LIỆU VÀ KIỂM THỬ BẰNG ORM
 # ==============================================================================
 
-def ensure_tables_exist(conn: Connection) -> None:
-    """Tạo 4 bảng nếu chưa tồn tại."""
-
-    logger.info(
-        "Bước 2/4: Khởi tạo cấu trúc 4 bảng..."
-    )
-
-    statements = [
-        """
-        CREATE TABLE IF NOT EXISTS courses (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            code VARCHAR(32) NOT NULL UNIQUE,
-            title VARCHAR(255) NOT NULL,
-            description TEXT NULL,
-            is_active TINYINT(1) NOT NULL DEFAULT 1,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-          COLLATE=utf8mb4_unicode_ci;
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS lessons (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            course_id INT NOT NULL,
-            title VARCHAR(255) NOT NULL,
-            description TEXT NULL,
-            order_index INT NOT NULL DEFAULT 1,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                ON UPDATE CURRENT_TIMESTAMP,
-            CONSTRAINT fk_lessons_course
-                FOREIGN KEY (course_id)
-                REFERENCES courses(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-          COLLATE=utf8mb4_unicode_ci;
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS topics (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            lesson_id INT NOT NULL,
-            title VARCHAR(255) NOT NULL,
-            slug VARCHAR(255) NULL,
-            order_index INT NOT NULL DEFAULT 1,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                ON UPDATE CURRENT_TIMESTAMP,
-            CONSTRAINT fk_topics_lesson
-                FOREIGN KEY (lesson_id)
-                REFERENCES lessons(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-          COLLATE=utf8mb4_unicode_ci;
-        """,
-
-        """
-        CREATE TABLE IF NOT EXISTS lesson_contents (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            topic_id INT NOT NULL,
-            content_type VARCHAR(50) NOT NULL DEFAULT 'markdown',
-            summary TEXT NULL,
-            content_markdown LONGTEXT NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                ON UPDATE CURRENT_TIMESTAMP,
-            CONSTRAINT fk_contents_topic
-                FOREIGN KEY (topic_id)
-                REFERENCES topics(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-          COLLATE=utf8mb4_unicode_ci;
-        """,
-    ]
-
-    for statement in statements:
-        conn.execute(text(statement))
-
-    logger.info("PASS: Đã kiểm tra đủ 4 bảng.")
-
-
-def reset_tables(conn: Connection) -> None:
-    """Xóa dữ liệu cũ trong 4 bảng khi có --reset."""
-
-    logger.warning("Đang reset dữ liệu cũ...")
-
-    try:
-        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-
-        for table_name in (
-            "lesson_contents",
-            "topics",
-            "lessons",
-            "courses",
-        ):
-            conn.execute(
-                text(f"TRUNCATE TABLE `{table_name}`")
-            )
-
-    finally:
-        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
-
-    logger.info("PASS: Đã làm sạch dữ liệu cũ.")
-
-
 def seed_all_data(engine: Engine, reset: bool = False) -> None:
-    """Nạp dữ liệu mẫu và tự động kiểm thử database."""
+    """Tạo schema theo ORM, nạp dữ liệu mẫu và kiểm tra quan hệ dữ liệu."""
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
-    with engine.begin() as conn:
+    with SessionLocal() as session:
+        with session.begin():
+            courses_by_seed_id: dict[int, Course] = {}
+            for course_data in COURSES_DATA:
+                course = session.scalar(
+                    select(Course).where(Course.code == course_data["code"])
+                )
+                if course is None:
+                    course = Course(
+                        code=course_data["code"],
+                        title=course_data["title"],
+                        description=course_data["description"],
+                        status="ACTIVE",
+                    )
+                    session.add(course)
+                else:
+                    course.title = course_data["title"]
+                    course.description = course_data["description"]
+                    course.status = "ACTIVE"
+                session.flush()
+                courses_by_seed_id[course_data["id"]] = course
 
-        # ----------------------------------------------------------
-        # KIỂM TRA DATABASE ĐANG KẾT NỐI
-        # ----------------------------------------------------------
+            lessons_by_seed_id: dict[int, Lesson] = {}
+            for lesson_data in LESSONS_DATA:
+                course = courses_by_seed_id[lesson_data["course_id"]]
+                lessons = session.scalars(
+                    select(Lesson).where(
+                        Lesson.course_id == course.id,
+                        Lesson.order_index == lesson_data["order_index"],
+                    )
+                ).all()
+                if len(lessons) > 1:
+                    raise RuntimeError(
+                        f"Có nhiều bài học thứ {lesson_data['order_index']} "
+                        f"trong môn {course.code}; không thể xác định bản ghi seed."
+                    )
 
-        active_db = conn.execute(
-            text("SELECT DATABASE()")
-        ).scalar_one()
+                lesson = lessons[0] if lessons else Lesson(course_id=course.id)
+                lesson.title = lesson_data["title"]
+                lesson.order_index = lesson_data["order_index"]
+                if not lessons:
+                    session.add(lesson)
+                session.flush()
+                lessons_by_seed_id[lesson_data["id"]] = lesson
 
-        if active_db != TARGET_DB_NAME:
-            raise RuntimeError(
-                f"Sai database! Đang kết nối: {active_db}"
-            )
+            if reset:
+                for topic_data in TOPICS_DATA:
+                    lesson = lessons_by_seed_id[topic_data["lesson_id"]]
+                    marker = f"# {topic_data['title']}\n\n"
+                    contents = session.scalars(
+                        select(LessonContent).where(
+                            LessonContent.lesson_id == lesson.id
+                        )
+                    ).all()
+                    for content in contents:
+                        if content.body.startswith(marker):
+                            session.delete(content)
 
-        logger.info(
-            "PASS: Đang kết nối đúng database `%s`.",
-            active_db,
-        )
+                    topic = session.scalar(
+                        select(Topic).where(
+                            Topic.lesson_id == lesson.id,
+                            Topic.name == topic_data["title"],
+                        )
+                    )
+                    if topic is not None:
+                        session.delete(topic)
+                session.flush()
 
-        # ----------------------------------------------------------
-        # KHỞI TẠO BẢNG
-        # ----------------------------------------------------------
+            topics_by_seed_id: dict[int, Topic] = {}
+            for topic_data in TOPICS_DATA:
+                lesson = lessons_by_seed_id[topic_data["lesson_id"]]
+                topic = session.scalar(
+                    select(Topic).where(
+                        Topic.lesson_id == lesson.id,
+                        Topic.name == topic_data["title"],
+                    )
+                )
+                if topic is None:
+                    topic = Topic(lesson_id=lesson.id, name=topic_data["title"])
+                    session.add(topic)
+                topics_by_seed_id[topic_data["id"]] = topic
 
-        ensure_tables_exist(conn)
+            session.flush()
+            topics_data_by_id = {item["id"]: item for item in TOPICS_DATA}
+            lessons_data_by_id = {item["id"]: item for item in LESSONS_DATA}
+            for content_data in LESSON_CONTENTS_DATA:
+                topic = topics_by_seed_id[content_data["topic_id"]]
+                topic_data = topics_data_by_id[content_data["topic_id"]]
+                lesson = lessons_by_seed_id[topic_data["lesson_id"]]
+                marker = f"# {topic.name}\n\n"
+                lesson_description = ""
+                if topic_data["order_index"] == 1:
+                    lesson_description = (
+                        f"**Mô tả bài học:** "
+                        f"{lessons_data_by_id[topic_data['lesson_id']]['description']}\n\n"
+                    )
+                body = (
+                    f"{marker}{lesson_description}"
+                    f"**Tóm tắt:** {content_data['summary']}\n\n"
+                    f"{content_data['content_markdown']}"
+                )
+                matching_contents = [
+                    content
+                    for content in session.scalars(
+                        select(LessonContent).where(
+                            LessonContent.lesson_id == lesson.id
+                        )
+                    ).all()
+                    if content.body.startswith(marker)
+                ]
+                if len(matching_contents) > 1:
+                    raise RuntimeError(
+                        f"Có nhiều nội dung seed cho chủ đề {topic_data['title']}."
+                    )
 
-        if reset:
-            reset_tables(conn)
+                content = (
+                    matching_contents[0]
+                    if matching_contents
+                    else LessonContent(lesson_id=lesson.id)
+                )
+                content.content_type = "MARKDOWN"
+                content.body = body
+                if not matching_contents:
+                    session.add(content)
 
-        logger.info(
-            "Bước 3/4: Đang nạp dữ liệu mẫu..."
-        )
+            session.flush()
+            course_ids = [course.id for course in courses_by_seed_id.values()]
+            lesson_ids = [lesson.id for lesson in lessons_by_seed_id.values()]
+            actual_counts = {
+                "courses": session.scalar(
+                    select(func.count(Course.id)).where(Course.id.in_(course_ids))
+                ),
+                "lessons": session.scalar(
+                    select(func.count(Lesson.id)).where(Lesson.id.in_(lesson_ids))
+                ),
+                "topics": session.scalar(
+                    select(func.count(Topic.id)).where(Topic.lesson_id.in_(lesson_ids))
+                ),
+                "lesson_contents": session.scalar(
+                    select(func.count(LessonContent.id)).where(
+                        LessonContent.lesson_id.in_(lesson_ids)
+                    )
+                ),
+            }
+            expected_counts = {
+                "courses": len(COURSES_DATA),
+                "lessons": len(LESSONS_DATA),
+                "topics": len(TOPICS_DATA),
+                "lesson_contents": len(LESSON_CONTENTS_DATA),
+            }
+            for table_name, expected in expected_counts.items():
+                actual = actual_counts[table_name]
+                if actual != expected:
+                    raise RuntimeError(
+                        f"Bảng {table_name} có {actual} bản ghi seed, "
+                        f"mong đợi {expected}."
+                    )
+                logger.info("PASS: %-20s %s/%s bản ghi", table_name, actual, expected)
 
-        # ----------------------------------------------------------
-        # NẠP COURSES
-        # ----------------------------------------------------------
-
-        conn.execute(
-            text("""
-                INSERT INTO courses
-                    (id, code, title, description, is_active)
-                VALUES
-                    (:id, :code, :title, :description, :is_active)
-                ON DUPLICATE KEY UPDATE
-                    code = VALUES(code),
-                    title = VALUES(title),
-                    description = VALUES(description),
-                    is_active = VALUES(is_active)
-            """),
-            COURSES_DATA,
-        )
-
-        # ----------------------------------------------------------
-        # NẠP LESSONS
-        # ----------------------------------------------------------
-
-        conn.execute(
-            text("""
-                INSERT INTO lessons
-                    (id, course_id, title, description, order_index)
-                VALUES
-                    (:id, :course_id, :title, :description, :order_index)
-                ON DUPLICATE KEY UPDATE
-                    course_id = VALUES(course_id),
-                    title = VALUES(title),
-                    description = VALUES(description),
-                    order_index = VALUES(order_index)
-            """),
-            LESSONS_DATA,
-        )
-
-        # ----------------------------------------------------------
-        # NẠP TOPICS
-        # ----------------------------------------------------------
-
-        conn.execute(
-            text("""
-                INSERT INTO topics
-                    (id, lesson_id, title, slug, order_index)
-                VALUES
-                    (:id, :lesson_id, :title, :slug, :order_index)
-                ON DUPLICATE KEY UPDATE
-                    lesson_id = VALUES(lesson_id),
-                    title = VALUES(title),
-                    slug = VALUES(slug),
-                    order_index = VALUES(order_index)
-            """),
-            TOPICS_DATA,
-        )
-
-        # ----------------------------------------------------------
-        # NẠP LESSON CONTENTS
-        # ----------------------------------------------------------
-
-        conn.execute(
-            text("""
-                INSERT INTO lesson_contents
-                    (id, topic_id, content_type, summary, content_markdown)
-                VALUES
-                    (:id, :topic_id, :content_type, :summary, :content_markdown)
-                ON DUPLICATE KEY UPDATE
-                    topic_id = VALUES(topic_id),
-                    content_type = VALUES(content_type),
-                    summary = VALUES(summary),
-                    content_markdown = VALUES(content_markdown)
-            """),
-            LESSON_CONTENTS_DATA,
-        )
-
-        logger.info("PASS: Đã thực hiện nạp dữ liệu.")
-
-        # ----------------------------------------------------------
-        # BƯỚC 4: KIỂM THỬ DỮ LIỆU
-        # ----------------------------------------------------------
-
-        logger.info("Bước 4/4: Kiểm thử dữ liệu database...")
-
-        expected_counts = {
-            "courses": 2,
-            "lessons": 8,
-            "topics": 16,
-            "lesson_contents": 16,
-        }
-
-        actual_counts = {}
-
-        for table_name, expected in expected_counts.items():
-
-            total = conn.execute(
-                text(f"SELECT COUNT(*) FROM `{table_name}`")
-            ).scalar_one()
-
-            actual_counts[table_name] = total
-
-            if total != expected:
+            topic_count = actual_counts["topics"]
+            content_count = actual_counts["lesson_contents"]
+            if topic_count != content_count:
                 raise RuntimeError(
-                    f"FAIL: Bảng {table_name} có {total} bản ghi, "
-                    f"mong đợi {expected}."
+                    f"Số chủ đề ({topic_count}) không khớp số nội dung ({content_count})."
                 )
 
-            logger.info(
-                "PASS: %-20s %s/%s bản ghi",
-                table_name,
-                total,
-                expected,
-            )
-
-        # ----------------------------------------------------------
-        # KIỂM TRA LIÊN KẾT GIỮA 4 BẢNG
-        # ----------------------------------------------------------
-
-        join_count = conn.execute(
-            text("""
-                SELECT COUNT(*)
-                FROM courses c
-                INNER JOIN lessons l
-                    ON c.id = l.course_id
-                INNER JOIN topics t
-                    ON l.id = t.lesson_id
-                INNER JOIN lesson_contents lc
-                    ON t.id = lc.topic_id
-            """)
-        ).scalar_one()
-
-        if join_count != 16:
-            raise RuntimeError(
-                f"FAIL: JOIN trả về {join_count} dòng, mong đợi 16."
-            )
-
-        logger.info(
-            "PASS: Quan hệ khóa ngoại và JOIN (%s dòng).",
-            join_count,
-        )
-
-        # ----------------------------------------------------------
-        # BÁO CÁO TỔNG HỢP
-        # ----------------------------------------------------------
-
-        summary_rows = conn.execute(
-            text("""
-                SELECT
-                    c.id,
-                    c.code,
-                    c.title AS course_title,
-                    COUNT(DISTINCT l.id) AS total_lessons,
-                    COUNT(DISTINCT t.id) AS total_topics,
-                    COUNT(DISTINCT lc.id) AS total_contents
-                FROM courses c
-                LEFT JOIN lessons l
-                    ON c.id = l.course_id
-                LEFT JOIN topics t
-                    ON l.id = t.lesson_id
-                LEFT JOIN lesson_contents lc
-                    ON t.id = lc.topic_id
-                GROUP BY c.id, c.code, c.title
-                ORDER BY c.id
-            """)
-        ).mappings().all()
-
-        print("\n" + "=" * 100)
-        print(" BÁO CÁO KIỂM THỬ DATABASE - TASK TK-03")
-        print(f" Thời gian: {datetime.now():%d/%m/%Y %H:%M:%S}")
-        print(f" Database: {active_db}")
-        print("=" * 100)
-
-        print(
-            f"{'ID':<5} {'Mã môn':<10} {'Tên môn học':<42}"
-            f"{'Bài học':<10} {'Chủ đề':<10} {'Nội dung':<10}"
-        )
-
-        print("-" * 100)
-
-        for row in summary_rows:
+            logger.info("PASS: Khóa ngoại của các bản ghi seed hợp lệ.")
+            print("\n" + "=" * 100)
+            print(" BÁO CÁO KIỂM THỬ DATABASE - TASK TK-03")
+            print(f" Thời gian: {datetime.now():%d/%m/%Y %H:%M:%S}")
+            print(f" Database: {engine.url.database}")
+            print("=" * 100)
             print(
-                f"{row['id']:<5} "
-                f"{row['code']:<10} "
-                f"{row['course_title']:<42} "
-                f"{row['total_lessons']:<10} "
-                f"{row['total_topics']:<10} "
-                f"{row['total_contents']:<10}"
+                f"{'Mã môn':<10} {'Tên môn học':<42}"
+                f"{'Bài học':<10} {'Chủ đề':<10} {'Nội dung':<10}"
             )
+            print("-" * 100)
+            for course_data in COURSES_DATA:
+                course = courses_by_seed_id[course_data["id"]]
+                course_lesson_ids = [
+                    lesson.id
+                    for lesson in lessons_by_seed_id.values()
+                    if lesson.course_id == course.id
+                ]
+                course_topics = session.scalar(
+                    select(func.count(Topic.id)).where(
+                        Topic.lesson_id.in_(course_lesson_ids)
+                    )
+                )
+                course_contents = session.scalar(
+                    select(func.count(LessonContent.id)).where(
+                        LessonContent.lesson_id.in_(course_lesson_ids)
+                    )
+                )
+                print(
+                    f"{course.code:<10} {course.title:<42}"
+                    f"{len(course_lesson_ids):<10} {course_topics:<10} "
+                    f"{course_contents:<10}"
+                )
+            print("-" * 100)
+            print(f"TỔNG: {sum(actual_counts.values())} bản ghi")
+            print("KẾT QUẢ: PASS - DATABASE HOẠT ĐỘNG TỐT")
+            print("=" * 100 + "\n")
 
-        print("-" * 100)
 
-        print(
-            f"TỔNG: {sum(actual_counts.values())} bản ghi"
-        )
-
-        print("KẾT QUẢ: PASS - DATABASE HOẠT ĐỘNG TỐT")
-        print("=" * 100 + "\n")
-
-       # ==============================================================================
+# ==============================================================================
 # 5. THAM SỐ DÒNG LỆNH VÀ HÀM MAIN
 # ==============================================================================
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Nạp dữ liệu mẫu LearnMate AI - Task TK-03."
     )
-
+    parser.add_argument("--host", default=DB_HOST, help="Địa chỉ MySQL Host")
+    parser.add_argument(
+        "--port", type=int, default=DB_PORT, help="Cổng kết nối MySQL"
+    )
+    parser.add_argument("--user", default=DB_USER, help="Tài khoản MySQL")
+    parser.add_argument(
+        "--password", default=DB_PASSWORD, help="Mật khẩu MySQL"
+    )
+    parser.add_argument(
+        "--database", default=TARGET_DB_NAME, help="Database mục tiêu"
+    )
+    parser.add_argument(
+        "--root-user", default=DB_ROOT_USER, help="Tài khoản quản trị MySQL"
+    )
+    parser.add_argument(
+        "--root-password",
+        default=DB_ROOT_PASSWORD,
+        help="Mật khẩu quản trị (hoặc đặt DB_ROOT_PASSWORD trong .env)",
+    )
     parser.add_argument(
         "--reset",
         action="store_true",
-        help="Xóa dữ liệu cũ và nạp lại toàn bộ dữ liệu mẫu.",
+        help="Xóa và nạp lại dữ liệu seed của hai môn IT201/IT202.",
     )
+    return parser.parse_args(argv)
 
-    return parser.parse_args()
 
-
-def main() -> int:
-    args = parse_args()
-
-    params = get_mysql_connection_params()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    params = get_mysql_connection_params(args)
     engine = None
 
     try:
-        # Kiểm tra và tạo database
-        db_url = create_database_if_not_exists(params)
-
-        # Kết nối trực tiếp vào database mục tiêu
+        create_database_if_not_exists(params)
         engine = create_engine(
-            db_url,
+            create_database_url(params),
             pool_pre_ping=True,
             connect_args={"connect_timeout": 10},
         )
-
-        # Kiểm tra kết nối thực tế
         with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
+            version, active_database = conn.exec_driver_sql(
+                "SELECT VERSION(), DATABASE()"
+            ).one()
+        logger.info("PASS: Kết nối MySQL %s tại %s:%s", version, params["host"], params["port"])
+        if active_database != params["database"]:
+            raise RuntimeError(
+                f"Kết nối nhầm database `{active_database}`, "
+                f"mong đợi `{params['database']}`."
+            )
 
-        # Tạo bảng, nạp dữ liệu, kiểm thử
         seed_all_data(engine, reset=args.reset)
-
         logger.info(
-            "HOÀN TẤT 100%%! Task TK-03 thành công trên database `%s`.",
-            TARGET_DB_NAME,
+            "HOÀN TẤT! Dữ liệu mẫu đã được nạp vào database `%s`.",
+            params["database"],
         )
-
         return 0
-
     except SQLAlchemyError as exc:
-        logger.error(
-            "LỖI MYSQL / SQLALCHEMY: %s",
-            exc,
-        )
+        logger.error("LỖI MYSQL / SQLALCHEMY: %s", exc)
+        if getattr(exc.orig, "args", ())[:1] == (1049,):
+            logger.error(
+                "Database chưa tồn tại. Hãy khởi tạo database hoặc cấu hình "
+                "DB_ROOT_PASSWORD để script tự tạo database."
+            )
         return 1
-
-    except Exception as exc:
-        logger.error(
-            "LỖI KHÔNG XÁC ĐỊNH: %s",
-            exc,
-        )
+    except (RuntimeError, ValueError) as exc:
+        logger.error("LỖI CẤU HÌNH / DỮ LIỆU: %s", exc)
         return 1
-
     finally:
         if engine is not None:
             engine.dispose()
