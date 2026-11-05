@@ -138,7 +138,22 @@ learnmate_ai/
    - Dịch vụ trí tuệ nhân tạo (AI Health): http://localhost:8000/ai/health
    - Cơ sở dữ liệu MySQL: Cổng kết nối ngoài mặc định là `3306` (nếu máy tính đã có MySQL cài sẵn gây trùng cổng, chỉ cần đổi trong `.env` thành `MYSQL_HOST_PORT=3307`)
 
-### 4.3. Chạy từng dịch vụ trực tiếp (Local Development)
+### 4.3. Nạp dữ liệu mẫu
+
+Sau khi MySQL sẵn sàng, cài dependencies Backend và chạy từ thư mục gốc dự án:
+
+```bash
+pip install -r backend/requirements.txt
+python scripts/seed_mock_data.py
+```
+
+Script đọc thông tin kết nối (`DB_HOST`, `MYSQL_HOST_PORT`, `DB_USER`, `DB_PASSWORD`,
+`DB_NAME`) từ `.env`; mặc định trùng với cấu hình MySQL Docker Compose. Nếu database
+chưa tồn tại, đặt thêm `DB_ROOT_PASSWORD` để script tạo database. Có thể ghi đè cấu
+hình bằng `--host`, `--port`, `--user`, `--password` và `--database`. Dùng `--reset`
+để nạp lại riêng dữ liệu mẫu của hai môn `IT201` và `IT202`.
+
+### 4.4. Chạy từng dịch vụ trực tiếp (Local Development)
 
 - **Backend Core**:
   ```bash
