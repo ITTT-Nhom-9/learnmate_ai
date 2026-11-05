@@ -1,16 +1,42 @@
+import os
+from pathlib import Path
+from typing import Optional, List
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
-from typing import Optional
+
+# Xac dinh duong dan goc de tu dong doc .env bat ke thu muc thuc thi lenh
+CORE_DIR = Path(__file__).resolve().parent
+BACKEND_DIR = CORE_DIR.parent.parent
+REPO_ROOT = BACKEND_DIR.parent
+
+ENV_FILES: List[str] = [
+    str(REPO_ROOT / ".env"),
+    str(BACKEND_DIR / ".env"),
+    ".env",
+    "../.env",
+]
 
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "LearnMate AI - Backend Core"
     API_V1_STR: str = "/api/v1"
     
-    # Database
-    DATABASE_URL: str = Field(
-        default="mysql+pymysql://learnmate_user:learnmate_pass@localhost:3307/learnmate?charset=utf8mb4"
-    )
+    # Database Settings
+    DB_HOST: str = Field(default="localhost")
+    DB_USER: str = Field(default="learnmate_user")
+    DB_PASSWORD: str = Field(default="your_secure_password")
+    DB_NAME: str = Field(default="learnmate")
+    MYSQL_HOST_PORT: int = Field(default=3306)
+    DATABASE_URL: Optional[str] = None
+    
+    @model_validator(mode="after")
+    def assemble_db_connection(self) -> "Settings":
+        if not self.DATABASE_URL:
+            self.DATABASE_URL = (
+                f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}"
+                f"@{self.DB_HOST}:{self.MYSQL_HOST_PORT}/{self.DB_NAME}?charset=utf8mb4"
+            )
+        return self
     
     # Security & JWT
     JWT_SECRET: str = Field(default="YourSuperSecretKeyMin32Chars2026!")
@@ -23,11 +49,10 @@ class Settings(BaseSettings):
     AI_SERVICE_URL: str = Field(default="http://localhost:8000")
     
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=ENV_FILES,
         env_file_encoding="utf-8",
         extra="ignore"
     )
 
 
 settings = Settings()
-

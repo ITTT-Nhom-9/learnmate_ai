@@ -136,7 +136,7 @@ learnmate_ai/
    - Máy chủ nghiệp vụ (Backend API Docs): http://localhost:8080/api/v1/docs
    - Kiểm tra sức khỏe Backend: http://localhost:8080/api/v1/health
    - Dịch vụ trí tuệ nhân tạo (AI Health): http://localhost:8000/ai/health
-   - Cơ sở dữ liệu MySQL: Cổng kết nối ngoài `3307` (tránh xung đột với MySQL cài sẵn cổng 3306)
+   - Cơ sở dữ liệu MySQL: Cổng kết nối ngoài mặc định là `3306` (nếu máy tính đã có MySQL cài sẵn gây trùng cổng, chỉ cần đổi trong `.env` thành `MYSQL_HOST_PORT=3307`)
 
 ### 4.3. Nạp dữ liệu mẫu
 
