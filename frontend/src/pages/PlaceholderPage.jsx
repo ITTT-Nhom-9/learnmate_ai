@@ -1,22 +1,19 @@
+import { useNavigate, useParams } from 'react-router-dom';
 import { Construction } from 'lucide-react';
 import Button from '../components/common/Button';
 import EmptyState from '../components/common/EmptyState';
-import { useAuth } from '../hooks/useAuth';
 
-/** Trang giữ chỗ cho màn hình thuộc task khác. Có nút đăng xuất để kiểm tra luồng xác thực. */
+/** Trang giữ chỗ cho các màn hình thuộc task khác (Gia sư AI, Tiến độ) để liên kết điều hướng không bị 404. */
 export default function PlaceholderPage({ title }) {
-  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { lessonId } = useParams();
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
       <EmptyState
         icon={Construction}
-        title={`${title} đang được phát triển`}
-        description={`Bạn đã đăng nhập với tên ${user?.full_name || ''}. Màn hình này sẽ được hoàn thiện ở task tiếp theo.`}
-        action={
-          <Button variant="outline" onClick={logout}>
-            Đăng xuất
-          </Button>
-        }
+        title={`${title}${lessonId ? ` (bài học #${lessonId})` : ''} đang được phát triển`}
+        description="Màn hình này sẽ được hoàn thiện ở task tiếp theo trong kế hoạch."
+        action={<Button variant="outline" onClick={() => navigate('/courses')}>Về danh mục môn học</Button>}
       />
     </div>
   );
