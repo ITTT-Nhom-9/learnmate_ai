@@ -143,6 +143,14 @@ class Lesson(Base):
         order_by="LessonContent.id"
     )
 
+    # Quan hệ 1:N với ChatSession
+    chat_sessions = relationship(
+        "ChatSession",
+        back_populates="lesson",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
     def __repr__(self) -> str:
         return f"<Lesson(id={self.id}, course_id={self.course_id}, title='{self.title}')>"
 
@@ -167,6 +175,14 @@ class Topic(Base):
 
     # Quan hệ N:1 với Lesson
     lesson = relationship("Lesson", back_populates="topics")
+
+    # Quan hệ 1:N với Quiz
+    quizzes = relationship(
+        "Quiz",
+        back_populates="topic",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
 
     def __repr__(self) -> str:
         return f"<Topic(id={self.id}, lesson_id={self.lesson_id}, name='{self.name}')>"
