@@ -130,7 +130,8 @@ class Lesson(Base):
         "Topic",
         back_populates="lesson",
         cascade="all, delete-orphan",
-        passive_deletes=True
+        passive_deletes=True,
+        order_by="Topic.id"
     )
 
     # Quan hệ 1:N với LessonContent
@@ -138,7 +139,8 @@ class Lesson(Base):
         "LessonContent",
         back_populates="lesson",
         cascade="all, delete-orphan",
-        passive_deletes=True
+        passive_deletes=True,
+        order_by="LessonContent.id"
     )
 
     def __repr__(self) -> str:
