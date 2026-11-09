@@ -1,0 +1,244 @@
+{
+ "courses": [
+  {
+   "id": 1,
+   "code": "IT201",
+   "title": "Cơ sở dữ liệu",
+   "description": "Học phần cung cấp kiến thức nền tảng về Hệ quản trị cơ sở dữ liệu (DBMS), thiết kế lược đồ Thực thể - Kết hợp (ERD), Đại số quan hệ, ngôn ngữ truy vấn SQL và các dạng chuẩn hóa dữ liệu.",
+   "lessons": [
+    {
+     "id": 1,
+     "title": "Bài 1: Tổng quan về Hệ Cơ sở dữ liệu",
+     "description": "Khái niệm CSDL, Hệ quản trị CSDL (DBMS) và kiến trúc 3 lược đồ ANSI-SPARC.",
+     "order_index": 1,
+     "topics": [
+      {
+       "id": 1,
+       "name": "Hệ quản trị CSDL (DBMS) và Hệ thống Tập tin truyền thống"
+      },
+      {
+       "id": 2,
+       "name": "Kiến trúc 3 lược đồ ANSI-SPARC và Tính độc lập dữ liệu"
+      }
+     ],
+     "contents": [
+      {
+       "id": 1,
+       "content_type": "MARKDOWN",
+       "body": "# Hệ quản trị CSDL (DBMS) và Hệ thống Tập tin truyền thống\n\n**Mô tả bài học:** Khái niệm CSDL, Hệ quản trị CSDL (DBMS) và kiến trúc 3 lược đồ ANSI-SPARC.\n\n**Tóm tắt:** So sánh DBMS với hệ thống quản lý file truyền thống và 4 tính chất giao dịch ACID.\n\n### 1. Khái niệm Cơ sở dữ liệu và DBMS\n**Cơ sở dữ liệu (CSDL)** là một tập hợp dữ liệu có cấu trúc, liên quan chặt chẽ với nhau. **Hệ quản trị CSDL (DBMS)** (như MySQL, PostgreSQL) là phần mềm giúp khởi tạo, truy vấn và bảo mật CSDL.\n\n### 2. Tính chất Giao dịch ACID\nMọi giao dịch (Transaction) trong DBMS chuẩn đều đảm bảo 4 tính chất $ACID$:\n* **Atomicity (Tính nguyên tố):** Thực hiện toàn bộ ($100\\%$) hoặc không thực hiện gì cả ($0\\%$). \n* **Consistency (Tính nhất quán):** Bảo toàn mọi ràng buộc toàn vẹn dữ liệu.\n* **Isolation (Tính cô lập):** Các giao dịch đồng thời không làm sai lệch kết quả của nhau.\n* **Durability (Tính bền vững):** Dữ liệu sau khi `COMMIT` được lưu trữ bền vững."
+      },
+      {
+       "id": 2,
+       "content_type": "MARKDOWN",
+       "body": "# Kiến trúc 3 lược đồ ANSI-SPARC và Tính độc lập dữ liệu\n\n**Tóm tắt:** Ba mức trừu tượng dữ liệu ANSI-SPARC và tính độc lập dữ liệu vật lý/logic.\n\n### 1. Kiến trúc 3 lược đồ ANSI-SPARC\nHệ thống CSDL chuẩn được chia thành $3$ tầng trừu tượng:\n1. **Mức trong (Physical Level):** Mô tả cách lưu trữ vật lý trên đĩa (B-Tree index, byte).\n2. **Mức khái niệm (Conceptual Level):** Mô tả cấu trúc logic toàn bộ CSDL (bảng, khóa).\n3. **Mức ngoài (External/View Level):** Các khung nhìn (`VIEW`) cho từng nhóm người dùng.\n\n### 2. Tính Độc lập Dữ liệu\n* **Độc lập mức vật lý:** Thay đổi cấu trúc lưu trữ vật lý không làm ảnh hưởng lược đồ khái niệm.\n* **Độc lập mức logic:** Thay đổi cấu trúc bảng ở mức khái niệm không làm hỏng các `VIEW` của ứng dụng."
+      }
+     ]
+    },
+    {
+     "id": 2,
+     "title": "Bài 2: Mô hình Thực thể - Mối kết hợp (ERD)",
+     "description": "Phương pháp phân tích và thiết kế CSDL ở mức khái niệm bằng sơ đồ ER.",
+     "order_index": 2,
+     "topics": [
+      {
+       "id": 3,
+       "name": "Thực thể, Thuộc tính và Các loại Khóa định danh"
+      },
+      {
+       "id": 4,
+       "name": "Mối kết hợp (Relationship) và Bản số (Cardinality)"
+      }
+     ],
+     "contents": [
+      {
+       "id": 3,
+       "content_type": "MARKDOWN",
+       "body": "# Thực thể, Thuộc tính và Các loại Khóa định danh\n\n**Mô tả bài học:** Phương pháp phân tích và thiết kế CSDL ở mức khái niệm bằng sơ đồ ER.\n\n**Tóm tắt:** Phân loại thuộc tính trên ERD và cách xác định Siêu khóa, Khóa dự tuyển, Khóa chính.\n\n### 1. Thực thể và Thuộc tính\n* **Tập thực thể (Entity Set):** Nhóm các đối tượng cùng đặc trưng (VD: `SinhVien`, `MonHoc`).\n* **Các loại thuộc tính:** Đơn (Simple), Phức hợp (Composite), Đa trị (Multi-valued) và Suy diễn (Derived).\n\n### 2. Hệ thống Khóa định danh\nTrên tập thực thể $E$:\n* **Siêu khóa (Super Key - $SK$):** Tập thuộc tính phân biệt duy nhất hai thực thể: $\\forall e_1, e_2 \\in E, e_1 \\neq e_2 \\Rightarrow e_1[SK] \\neq e_2[SK]$.\n* **Khóa dự tuyển (Candidate Key - $CK$):** Siêu khóa tối tiểu (không chứa tập con thực sự nào là siêu khóa).\n* **Khóa chính (Primary Key - $PK$):** Khóa dự tuyển được chọn làm định danh chính thức."
+      },
+      {
+       "id": 4,
+       "content_type": "MARKDOWN",
+       "body": "# Mối kết hợp (Relationship) và Bản số (Cardinality)\n\n**Tóm tắt:** Bản số liên kết (1:1, 1:N, M:N) và quy tắc ánh xạ sang lược đồ cơ sở dữ liệu quan hệ.\n\n### 1. Bản số của Mối kết hợp (Cardinality)\n* **Quan hệ $1:1$:** Một thực thể nhóm A liên kết tối đa với một thực thể nhóm B.\n* **Quan hệ $1:N$:** Một Khoa quản lý nhiều Sinh viên ($N \\ge 0$).\n* **Quan hệ $M:N$:** Một Sinh viên đăng ký nhiều Môn học và ngược lại.\n\n### 2. Quy tắc chuyển đổi sang Bảng Quan hệ\n* Quan hệ **$1:N$**: Đưa khóa chính phía $1$ sang làm **Khóa ngoại (`FOREIGN KEY`)** ở bảng phía $N$.\n* Quan hệ **$M:N$**: Tách thành **bảng trung gian thứ 3** (như bảng `enrollments`) chứa cặp khóa ngoại."
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "title": "Bài 3: Mô hình Dữ liệu Quan hệ & Đại số Quan hệ",
+     "description": "Biểu diễn dữ liệu dạng bảng, ràng buộc toàn vẹn và các phép toán đại số quan hệ.",
+     "order_index": 3,
+     "topics": [
+      {
+       "id": 5,
+       "name": "Lược đồ Quan hệ và Ràng buộc Toàn vẹn (Integrity Constraints)"
+      },
+      {
+       "id": 6,
+       "name": "Các phép toán Đại số Quan hệ cốt lõi"
+      }
+     ],
+     "contents": [
+      {
+       "id": 5,
+       "content_type": "MARKDOWN",
+       "body": "# Lược đồ Quan hệ và Ràng buộc Toàn vẹn (Integrity Constraints)\n\n**Mô tả bài học:** Biểu diễn dữ liệu dạng bảng, ràng buộc toàn vẹn và các phép toán đại số quan hệ.\n\n**Tóm tắt:** Định nghĩa toán học của Quan hệ và 3 ràng buộc toàn vẹn: Miền giá trị, Thực thể, Tham chiếu.\n\n### 1. Định nghĩa Toán học của Quan hệ\nMột quan hệ $R$ trên các miền giá trị $D_1, D_2, \\dots, D_n$ là một tập con của tích Đề-các:\n$$R \\subseteq D_1 \\times D_2 \\times \\dots \\times D_n$$\n\n### 2. Ba Ràng buộc Toàn vẹn Cốt lõi\n1. **Toàn vẹn Miền giá trị (Domain Integrity):** Mỗi ô chứa giá trị nguyên tố (Atomic - chuẩn $1NF$).\n2. **Toàn vẹn Thực thể (Entity Integrity):** Khóa chính không bao giờ nhận giá trị rỗng (`PK IS NOT NULL`).\n3. **Toàn vẹn Tham chiếu (Referential Integrity):** Khóa ngoại ($FK$) phải tham chiếu đến $PK$ hợp lệ hoặc bằng `NULL`."
+      },
+      {
+       "id": 6,
+       "content_type": "MARKDOWN",
+       "body": "# Các phép toán Đại số Quan hệ cốt lõi\n\n**Tóm tắt:** Công thức biểu thức của phép Chọn, Chiếu, Tích Đề-các và Kết nối trong Đại số quan hệ.\n\n### 1. Phép Chọn và Phép Chiếu\n* **Phép Chọn (Selection - $\\sigma$):** Lọc các bộ (dòng) thỏa điều kiện $F$:\n  $$\\sigma_{F}(R) = \\{ t \\in R \\mid F(t) = \\text{true} \\}$$\n* **Phép Chiếu (Projection - $\\pi$):** Trích xuất tập cột $A_1, \\dots, A_k$ và loại bỏ dòng trùng:\n  $$\\pi_{A_1, A_2, \\dots, A_k}(R)$$\n\n### 2. Phép Kết nối (Join - $\\bowtie$)\nKết hợp hai quan hệ $R$ và $S$ theo điều kiện $\\theta$:\n$$R \\bowtie_{\\theta} S = \\sigma_{\\theta}(R \\times S)$$"
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "title": "Bài 4: Ngôn ngữ Truy vấn Có cấu trúc (SQL)",
+     "description": "Sử dụng nhóm lệnh DDL, DML và truy vấn kết nối nhiều bảng trong MySQL 8.0.",
+     "order_index": 4,
+     "topics": [
+      {
+       "id": 7,
+       "name": "Ngôn ngữ Định nghĩa Dữ liệu (DDL) và Ràng buộc Bảng"
+      },
+      {
+       "id": 8,
+       "name": "Ngôn ngữ Thao tác Dữ liệu (DML) và Truy vấn JOIN, GROUP BY"
+      }
+     ],
+     "contents": [
+      {
+       "id": 7,
+       "content_type": "MARKDOWN",
+       "body": "# Ngôn ngữ Định nghĩa Dữ liệu (DDL) và Ràng buộc Bảng\n\n**Mô tả bài học:** Sử dụng nhóm lệnh DDL, DML và truy vấn kết nối nhiều bảng trong MySQL 8.0.\n\n**Tóm tắt:** Cú pháp SQL DDL chuẩn khởi tạo bảng, khóa chính và khóa ngoại trong MySQL 8.0.\n\n### 1. Nhóm lệnh DDL (Data Definition Language)\nBao gồm các câu lệnh định nghĩa cấu trúc CSDL: `CREATE`, `ALTER`, `DROP`, `TRUNCATE`.\n\n### 2. Ví dụ Tạo Bảng với Ràng buộc Khóa ngoại\n```sql\nCREATE TABLE courses (\n    id INT AUTO_INCREMENT PRIMARY KEY,\n    code VARCHAR(20) NOT NULL UNIQUE,\n    title VARCHAR(255) NOT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n```"
+      },
+      {
+       "id": 8,
+       "content_type": "MARKDOWN",
+       "body": "# Ngôn ngữ Thao tác Dữ liệu (DML) và Truy vấn JOIN, GROUP BY\n\n**Tóm tắt:** Thứ tự thực thi câu lệnh SELECT và kỹ thuật truy vấn kết nối JOIN kèm GROUP BY.\n\n### 1. Thứ tự Thực thi Logic của Câu lệnh SELECT\n`FROM` $\\rightarrow$ `JOIN` $\\rightarrow$ `WHERE` $\\rightarrow$ `GROUP BY` $\\rightarrow$ `HAVING` $\\rightarrow$ `SELECT` $\\rightarrow$ `ORDER BY` $\\rightarrow$ `LIMIT`.\n\n### 2. Ví dụ Truy vấn Thống kê với LEFT JOIN\n```sql\nSELECT c.code, c.title, COUNT(l.id) AS total_lessons\nFROM courses c\nLEFT JOIN lessons l ON c.id = l.course_id\nGROUP BY c.id, c.code, c.title\nHAVING COUNT(l.id) >= 4;\n```"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "code": "IT202",
+   "title": "Cấu trúc dữ liệu và giải thuật",
+   "description": "Học phần trang bị tư duy tổ chức dữ liệu trong bộ nhớ, đánh giá độ phức tạp thuật toán qua ký pháp Big-O, cài đặt Danh sách liên kết, Ngăn xếp, Hàng đợi và Cây tìm kiếm nhị phân.",
+   "lessons": [
+    {
+     "id": 5,
+     "title": "Bài 1: Độ phức tạp Thuật toán & Kiểu dữ liệu Trừu tượng",
+     "description": "Phân tích thời gian thực thi, không gian bộ nhớ và ký pháp tiệm cận Big-O.",
+     "order_index": 1,
+     "topics": [
+      {
+       "id": 9,
+       "name": "Kiểu dữ liệu Trừu tượng (ADT) và Mô hình Bộ nhớ"
+      },
+      {
+       "id": 10,
+       "name": "Đánh giá Độ phức tạp Thuật toán với Ký pháp Big-O"
+      }
+     ],
+     "contents": [
+      {
+       "id": 9,
+       "content_type": "MARKDOWN",
+       "body": "# Kiểu dữ liệu Trừu tượng (ADT) và Mô hình Bộ nhớ\n\n**Mô tả bài học:** Phân tích thời gian thực thi, không gian bộ nhớ và ký pháp tiệm cận Big-O.\n\n**Tóm tắt:** Khái niệm Kiểu dữ liệu trừu tượng (ADT) và so sánh cấp phát tĩnh với cấp phát động.\n\n### 1. Kiểu Dữ liệu Trừu tượng (ADT)\n**ADT (Abstract Data Type)** xác định bản chất toán học của kiểu dữ liệu và các phép toán mà không phụ thuộc vào ngôn ngữ cài đặt cụ thể.\n\n### 2. Cấp phát Mảng Tĩnh vs Cấp phát Động\n* **Mảng tĩnh (Array):** Các phần tử nằm liên tiếp trong RAM, truy cập ngẫu nhiên chỉ mất $O(1)$:\n  $$\\text{Address}(A[i]) = \\text{Base\\_Address} + i \\times \\text{sizeof(Element)}$$\n* **Cấp phát động (Heap):** Xin vùng nhớ linh hoạt lúc chạy chương trình thông qua con trỏ."
+      },
+      {
+       "id": 10,
+       "content_type": "MARKDOWN",
+       "body": "# Đánh giá Độ phức tạp Thuật toán với Ký pháp Big-O\n\n**Tóm tắt:** Định nghĩa toán học của ký pháp Big-O và phân cấp độ phức tạp thời gian thực thi.\n\n### 1. Định nghĩa Toán học Ký pháp Big-O\nHàm thời gian $T(n)$ thuộc $O(g(n))$ nếu tồn tại hằng số $c > 0$ và $n_0 \\ge 1$ sao cho:\n$$0 \\le T(n) \\le c \\cdot g(n), \\quad \\forall n \\ge n_0$$\n\n### 2. Phân cấp Độ phức tạp Phổ biến\n$$O(1) < O(\\log_2 n) < O(n) < O(n \\log_2 n) < O(n^2) < O(2^n)$$\n\n```c\n// Vòng lặp lồng nhau có độ phức tạp O(n log n)\nfor (int i = 1; i <= n; i++) {\n    for (int j = 1; j <= n; j *= 2) {\n        sum += i + j;\n    }\n}\n```"
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "title": "Bài 2: Danh sách Liên kết (Linked List)",
+     "description": "Cấu trúc cấp phát động, thao tác con trỏ trên danh sách liên kết đơn và đôi.",
+     "order_index": 2,
+     "topics": [
+      {
+       "id": 11,
+       "name": "Danh sách Liên kết Đơn (Singly Linked List)"
+      },
+      {
+       "id": 12,
+       "name": "Danh sách Liên kết Đôi (Doubly Linked List)"
+      }
+     ],
+     "contents": [
+      {
+       "id": 11,
+       "content_type": "MARKDOWN",
+       "body": "# Danh sách Liên kết Đơn (Singly Linked List)\n\n**Mô tả bài học:** Cấu trúc cấp phát động, thao tác con trỏ trên danh sách liên kết đơn và đôi.\n\n**Tóm tắt:** Cấu trúc Node của Danh sách liên kết đơn và đánh giá độ phức tạp chèn/xóa phần tử.\n\n### 1. Cấu trúc Node trong Danh sách Liên kết Đơn\nMỗi `Node` lưu giá trị `data` và một con trỏ `next` trỏ tới phần tử kế tiếp.\n```c\ntypedef struct Node {\n    int data;\n    struct Node* next;\n} Node;\n```\n\n### 2. Độ phức tạp Thao tác\n* Thêm/Xóa tại đầu danh sách (`head`): $O(1)$.\n* Tìm kiếm hoặc truy cập phần tử thứ $k$: $O(n)$."
+      },
+      {
+       "id": 12,
+       "content_type": "MARKDOWN",
+       "body": "# Danh sách Liên kết Đôi (Doubly Linked List)\n\n**Tóm tắt:** Cấu trúc Node hai con trỏ (prev, next) và ưu thế xóa Node bất kỳ trong thời gian O(1).\n\n### 1. Cấu trúc Danh sách Liên kết Đôi\nMỗi `Node` có hai con trỏ `prev` và `next` giúp duyệt danh sách theo cả hai chiều.\n```c\ntypedef struct DNode {\n    int data;\n    struct DNode* prev;\n    struct DNode* next;\n} DNode;\n```\n\n### 2. Xóa Node $p$ Đã Biết Địa chỉ trong $O(1)$\n```c\nif (p->prev != NULL) p->prev->next = p->next;\nif (p->next != NULL) p->next->prev = p->prev;\nfree(p);\n```"
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "title": "Bài 3: Ngăn xếp (Stack) và Hàng đợi (Queue)",
+     "description": "Nguyên lý hoạt động LIFO, FIFO và ứng dụng trong trình biên dịch, lập lịch CPU.",
+     "order_index": 3,
+     "topics": [
+      {
+       "id": 13,
+       "name": "Ngăn xếp (Stack) và Nguyên lý LIFO"
+      },
+      {
+       "id": 14,
+       "name": "Hàng đợi (Queue) và Nguyên lý FIFO"
+      }
+     ],
+     "contents": [
+      {
+       "id": 13,
+       "content_type": "MARKDOWN",
+       "body": "# Ngăn xếp (Stack) và Nguyên lý LIFO\n\n**Mô tả bài học:** Nguyên lý hoạt động LIFO, FIFO và ứng dụng trong trình biên dịch, lập lịch CPU.\n\n**Tóm tắt:** Nguyên lý LIFO (Vào sau - Ra trước) của Ngăn xếp (Stack) và ứng dụng Call Stack.\n\n### 1. Nguyên lý Hoạt động LIFO (Last In, First Out)\n**Stack** chỉ cho phép thêm (`push`) và lấy phần tử (`pop`) tại một đầu duy nhất gọi là đỉnh (`top`).\n* `push(x)`: Thêm phần tử vào đỉnh — Độ phức tạp $O(1)$.\n* `pop()`: Lấy phần tử khỏi đỉnh — Độ phức tạp $O(1)$.\n\n### 2. Ứng dụng Thực tế\n* Quản lý địa chỉ trả về của hàm đệ quy (**Call Stack**).\n* Kiểm tra cặp dấu ngoặc hợp lệ và tính giá trị biểu thức hậu tố (Postfix)."
+      },
+      {
+       "id": 14,
+       "content_type": "MARKDOWN",
+       "body": "# Hàng đợi (Queue) và Nguyên lý FIFO\n\n**Tóm tắt:** Nguyên lý FIFO (Vào trước - Ra trước) của Hàng đợi (Queue) và công thức Hàng đợi vòng.\n\n### 1. Nguyên lý Hoạt động FIFO (First In, First Out)\n**Queue** thêm phần tử ở cuối hàng (`rear` - `enqueue`) và lấy ra ở đầu hàng (`front` - `dequeue`).\n\n### 2. Công thức Hàng đợi Vòng (Circular Queue)\nSử dụng phép toán chia lấy dư modulo $N$ để tái sử dụng không gian mảng:\n$$\\text{rear} = (\\text{rear} + 1) \\bmod N$$\n$$\\text{front} = (\\text{front} + 1) \\bmod N$$"
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "title": "Bài 4: Cấu trúc Cây và Cây Tìm kiếm Nhị phân (BST)",
+     "description": "Tổ chức dữ liệu phân cấp, các phép duyệt cây đệ quy và thao tác trên cây BST.",
+     "order_index": 4,
+     "topics": [
+      {
+       "id": 15,
+       "name": "Cây Nhị phân và 3 Phương pháp Duyệt Cây (Pre/In/Post-order)"
+      },
+      {
+       "id": 16,
+       "name": "Cây Tìm kiếm Nhị phân (Binary Search Tree - BST)"
+      }
+     ],
+     "contents": [
+      {
+       "id": 15,
+       "content_type": "MARKDOWN",
+       "body": "# Cây Nhị phân và 3 Phương pháp Duyệt Cây (Pre/In/Post-order)\n\n**Mô tả bài học:** Tổ chức dữ liệu phân cấp, các phép duyệt cây đệ quy và thao tác trên cây BST.\n\n**Tóm tắt:** Tính chất toán học của Cây nhị phân và 3 phép duyệt cây đệ quy NLR, LNR, LRN.\n\n### 1. Tính chất Cây Nhị phân (Binary Tree)\nMỗi nút có tối đa $2$ nút con. Cây nhị phân có chiều cao $h$ ($h \\ge 0$) có tổng số nút tối đa:\n$$N_{\\max} = 2^{h+1} - 1$$\n\n### 2. Ba Phép Duyệt Cây Theo Chiều Sâu\n* **Pre-order (NLR):** Gốc $\\rightarrow$ Trái $\\rightarrow$ Phải.\n* **In-order (LNR):** Trái $\\rightarrow$ Gốc $\\rightarrow$ Phải.\n* **Post-order (LRN):** Trái $\\rightarrow$ Phải $\\rightarrow$ Gốc."
+      },
+      {
+       "id": 16,
+       "content_type": "MARKDOWN",
+       "body": "# Cây Tìm kiếm Nhị phân (Binary Search Tree - BST)\n\n**Tóm tắt:** Bất biến của Cây tìm kiếm nhị phân (BST) và phân tích độ phức tạp tìm kiếm O(log n).\n\n### 1. Tính chất Bất biến của Cây BST\nTại mọi nút $u$: Mọi khóa thuộc cây con trái đều nhỏ hơn `u->key`, và mọi khóa thuộc cây con phải đều lớn hơn `u->key`. Duyệt **In-order (LNR)** trên BST luôn cho dãy giá trị tăng dần.\n\n### 2. Giải thuật Tìm kiếm Đệ quy\n```c\nNode* searchBST(Node* root, int target) {\n    if (root == NULL || root->key == target) return root;\n    if (target < root->key) return searchBST(root->left, target);\n    return searchBST(root->right, target);\n}\n```\n* **Độ phức tạp trung bình:** $O(\\log_2 n)$.\n* **Trường hợp suy biến (cây lệch):** $O(n)$."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
