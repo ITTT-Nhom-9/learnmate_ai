@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -10,6 +10,7 @@ from app.schemas.course import (
     CourseSummary,
     EnrollmentResponse,
     LessonDetail,
+    LessonDetailResponse,
 )
 from app.services.course_service import CourseError, CourseService, enrolled_at_of
 
@@ -23,28 +24,30 @@ def _to_http(exc: CourseError) -> HTTPException:
 @router.get(
     "",
     response_model=CourseListResponse,
-    summary="API-05: Lấy danh sách toàn bộ môn học (kèm số bài, số chủ đề, trạng thái ghi danh)",
+    summary="API-05: Lấy danh sách môn học (phân trang, kèm số bài, tiến độ, trạng thái ghi danh)",
 )
 def list_courses(
+    page: int = Query(1, ge=1, description="Trang hiện tại (bắt đầu từ 1)"),
+    limit: int = Query(10, ge=1, le=100, description="Số môn học mỗi trang (tối đa 100)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    rows = CourseService(db).list_courses(current_user)
-    items = [
+    rows, total = CourseService(db).list_courses(current_user, page=page, limit=limit)
+    courses = [
         CourseSummary(
             id=course.id,
             code=course.code,
             title=course.title,
             description=course.description,
             status=course.status,
-            lesson_count=stats.lesson_count,
+            total_lessons=stats.lesson_count,
             topic_count=stats.topic_count,
             is_enrolled=enrollment is not None,
             enrolled_at=enrolled_at_of(enrollment),
         )
         for course, stats, enrollment in rows
     ]
-    return CourseListResponse(total=len(items), items=items)
+    return CourseListResponse(courses=courses, total=total, page=page, limit=limit)
 
 
 @router.get(
@@ -67,12 +70,30 @@ def get_course_detail(
         title=course.title,
         description=course.description,
         status=course.status,
-        lesson_count=stats.lesson_count,
+        total_lessons=stats.lesson_count,
         topic_count=stats.topic_count,
         is_enrolled=enrollment is not None,
         enrolled_at=enrolled_at_of(enrollment),
         lessons=[LessonDetail.model_validate(lesson) for lesson in course.lessons],
     )
+
+
+@router.get(
+    "/{course_id}/lessons/{lesson_id}",
+    response_model=LessonDetailResponse,
+    summary="Xem chi tiết một bài học: các chủ đề và nội dung lý thuyết",
+)
+def get_lesson_detail(
+    course_id: int = Path(..., ge=1),
+    lesson_id: int = Path(..., ge=1),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        lesson = CourseService(db).get_lesson_detail(course_id, lesson_id)
+    except CourseError as exc:
+        raise _to_http(exc)
+    return LessonDetailResponse.model_validate(lesson)
 
 
 @router.post(
