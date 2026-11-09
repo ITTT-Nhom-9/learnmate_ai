@@ -68,6 +68,22 @@ class User(Base):
         passive_deletes=True
     )
 
+    # Quan hệ 1:N với ChatSession
+    chat_sessions = relationship(
+        "ChatSession",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
+    # Quan hệ 1:N với QuizAttempt
+    quiz_attempts = relationship(
+        "QuizAttempt",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email='{self.email}', role='{self.role}')>"
 
