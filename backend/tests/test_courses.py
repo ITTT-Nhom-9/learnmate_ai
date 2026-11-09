@@ -95,7 +95,7 @@ def auth(user_id: int) -> dict:
 
 @pytest.mark.parametrize(
     "method,path",
-    [("get", ""), ("get", "/1"), ("post", "/1/enroll")],
+    [("get", ""), ("get", "/1"), ("get", "/1/lessons/1"), ("post", "/1/enroll")],
 )
 def test_endpoints_require_access_token(client, method, path):
     res = getattr(client, method)(f"{API}{path}")
@@ -118,20 +118,22 @@ def test_list_courses_returns_active_courses_with_counts(client, seeded):
     assert res.status_code == 200
     body = res.json()
     assert body["total"] == 2
-    codes = [c["code"] for c in body["items"]]
+    codes = [c["code"] for c in body["courses"]]
     assert codes == ["CS101", "IT001"]  # mon INACTIVE bi an
 
-    cs, it = body["items"]
-    assert (cs["lesson_count"], cs["topic_count"]) == (2, 3)
-    assert (it["lesson_count"], it["topic_count"]) == (0, 0)
+    cs, it = body["courses"]
+    assert (cs["total_lessons"], cs["topic_count"]) == (2, 3)
+    assert (it["total_lessons"], it["topic_count"]) == (0, 0)
     assert cs["is_enrolled"] is False and cs["enrolled_at"] is None
+    assert cs["progress_pct"] == 0.0
+    assert (body["page"], body["limit"]) == (1, 10)
 
 
 def test_list_courses_reflects_enrollment_per_user(client, seeded):
     client.post(f"{API}/{seeded['cs']}/enroll", headers=auth(seeded["u1"]))
 
-    mine = {c["code"]: c for c in client.get(API, headers=auth(seeded["u1"])).json()["items"]}
-    other = {c["code"]: c for c in client.get(API, headers=auth(seeded["u2"])).json()["items"]}
+    mine = {c["code"]: c for c in client.get(API, headers=auth(seeded["u1"])).json()["courses"]}
+    other = {c["code"]: c for c in client.get(API, headers=auth(seeded["u2"])).json()["courses"]}
 
     assert mine["CS101"]["is_enrolled"] is True
     assert mine["CS101"]["enrolled_at"] is not None
@@ -147,7 +149,7 @@ def test_list_courses_empty(client, db_factory):
         uid = u.id
     res = client.get(API, headers=auth(uid))
     assert res.status_code == 200
-    assert res.json() == {"total": 0, "items": []}
+    assert res.json() == {"courses": [], "total": 0, "page": 1, "limit": 10}
 
 
 # ==============================================================================
@@ -159,7 +161,7 @@ def test_course_detail_returns_ordered_lessons_topics_and_contents(client, seede
     assert res.status_code == 200
     body = res.json()
     assert body["code"] == "CS101"
-    assert (body["lesson_count"], body["topic_count"]) == (2, 3)
+    assert (body["total_lessons"], body["topic_count"]) == (2, 3)
     assert body["is_enrolled"] is False
 
     lessons = body["lessons"]
@@ -168,6 +170,7 @@ def test_course_detail_returns_ordered_lessons_topics_and_contents(client, seede
     assert lessons[0]["contents"][0]["body"] == "# Linked list"
     assert [t["name"] for t in lessons[1]["topics"]] == ["BST"]
     assert lessons[1]["contents"] == []
+    assert all(t["mastery_score"] == 0.0 for l in lessons for t in l["topics"])
 
 
 def test_course_detail_shows_enrolled_flag(client, seeded):
@@ -201,6 +204,7 @@ def test_enroll_success(client, db_factory, seeded):
     assert body["course_id"] == seeded["cs"]
     assert body["enrollment_id"] > 0
     assert body["enrolled_at"]
+    assert body["status"] == "ACTIVE"
 
     with db_factory() as db:
         assert db.scalar(select(func.count(Enrollment.id))) == 1
@@ -258,3 +262,97 @@ def test_unique_constraint_exists_at_db_level(db_factory, seeded):
         ])
         with pytest.raises(IntegrityError):
             db.commit()
+
+
+# ==============================================================================
+# Phan trang GET /courses?page=&limit=
+# ==============================================================================
+
+def test_list_courses_pagination(client, seeded):
+    headers = auth(seeded["u1"])
+    p1 = client.get(API, params={"page": 1, "limit": 1}, headers=headers).json()
+    p2 = client.get(API, params={"page": 2, "limit": 1}, headers=headers).json()
+    p3 = client.get(API, params={"page": 3, "limit": 1}, headers=headers).json()
+
+    assert [c["code"] for c in p1["courses"]] == ["CS101"]
+    assert [c["code"] for c in p2["courses"]] == ["IT001"]
+    assert p3["courses"] == []
+    assert p1["total"] == p2["total"] == p3["total"] == 2  # total la tong so mon, khong phai so mon cua trang
+    assert (p2["page"], p2["limit"]) == (2, 1)
+
+
+@pytest.mark.parametrize("params", [{"page": 0}, {"limit": 0}, {"limit": 101}, {"page": "x"}])
+def test_list_courses_rejects_invalid_pagination(client, seeded, params):
+    assert client.get(API, params=params, headers=auth(seeded["u1"])).status_code == 422
+
+
+# ==============================================================================
+# GET /courses/{id}/lessons/{lesson_id}
+# ==============================================================================
+
+def _lesson_id(db_factory, course_id: int, order_index: int) -> int:
+    with db_factory() as db:
+        return db.scalar(
+            select(Lesson.id).where(Lesson.course_id == course_id, Lesson.order_index == order_index)
+        )
+
+
+def test_lesson_detail_returns_topics_and_contents(client, db_factory, seeded):
+    lesson_id = _lesson_id(db_factory, seeded["cs"], 1)
+    res = client.get(f"{API}/{seeded['cs']}/lessons/{lesson_id}", headers=auth(seeded["u1"]))
+    assert res.status_code == 200
+    body = res.json()
+    assert body["id"] == lesson_id
+    assert body["course_id"] == seeded["cs"]
+    assert body["title"] == "Bài 1: Danh sách liên kết"
+    assert [t["name"] for t in body["topics"]] == ["Singly Linked List", "Doubly Linked List"]
+    assert body["topics"][0]["mastery_score"] == 0.0
+    assert body["contents"] == [{"id": body["contents"][0]["id"], "content_type": "MARKDOWN", "body": "# Linked list"}]
+
+
+def test_lesson_detail_404_when_lesson_belongs_to_other_course(client, db_factory, seeded):
+    lesson_id = _lesson_id(db_factory, seeded["cs"], 1)
+    res = client.get(f"{API}/{seeded['it']}/lessons/{lesson_id}", headers=auth(seeded["u1"]))
+    assert res.status_code == 404
+    assert res.json()["detail"] == "Bài học không tồn tại"
+    assert client.get(f"{API}/{seeded['cs']}/lessons/99999", headers=auth(seeded["u1"])).status_code == 404
+
+
+def test_lesson_detail_404_when_course_inactive(client, db_factory, seeded):
+    with db_factory() as db:
+        lesson = Lesson(course_id=seeded["hidden"], title="Bài ẩn", order_index=1)
+        db.add(lesson)
+        db.commit()
+        lesson_id = lesson.id
+    res = client.get(f"{API}/{seeded['hidden']}/lessons/{lesson_id}", headers=auth(seeded["u1"]))
+    assert res.status_code == 404
+
+
+# ==============================================================================
+# CORS: khong tra "*" khi allow_credentials=True (ke ca response 401)
+# ==============================================================================
+
+def test_cors_echoes_allowed_origin_on_401(client):
+    origin = "http://localhost:5173"
+    res = client.get(API, headers={"Origin": origin})
+    assert res.status_code == 401
+    assert res.headers["access-control-allow-origin"] == origin
+    assert res.headers["access-control-allow-credentials"] == "true"
+
+
+def test_cors_preflight_allows_frontend_origin(client):
+    res = client.options(
+        API,
+        headers={
+            "Origin": "http://127.0.0.1:5173",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization",
+        },
+    )
+    assert res.status_code == 200
+    assert res.headers["access-control-allow-origin"] == "http://127.0.0.1:5173"
+
+
+def test_cors_rejects_unknown_origin(client):
+    res = client.get(API, headers={"Origin": "http://evil.example.com"})
+    assert "access-control-allow-origin" not in res.headers

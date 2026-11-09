@@ -2,9 +2,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+# Ten truong bam sat sheet "Dac ta API & Figma UI UX" (Project_LearnMate_AI.xlsx).
+# progress_pct / mastery_score: chua co bang mastery (Phan he hoc tap thich ung),
+# tam thoi tra 0.0 de Frontend hien thi thanh tien do / mau node chu de.
+
 
 # ------------------------------------------------------------------------------
-# GET /courses
+# API-05: GET /courses?page=&limit=
 # ------------------------------------------------------------------------------
 
 class CourseSummary(BaseModel):
@@ -13,19 +17,22 @@ class CourseSummary(BaseModel):
     title: str
     description: str | None = None
     status: str
-    lesson_count: int
+    total_lessons: int
     topic_count: int
+    progress_pct: float = 0.0
     is_enrolled: bool
     enrolled_at: datetime | None = None
 
 
 class CourseListResponse(BaseModel):
+    courses: list[CourseSummary]
     total: int
-    items: list[CourseSummary]
+    page: int
+    limit: int
 
 
 # ------------------------------------------------------------------------------
-# GET /courses/{id}
+# API-06: GET /courses/{id}
 # ------------------------------------------------------------------------------
 
 class TopicItem(BaseModel):
@@ -34,6 +41,7 @@ class TopicItem(BaseModel):
     id: int
     name: str
     description: str | None = None
+    mastery_score: float = 0.0
 
 
 class LessonContentItem(BaseModel):
@@ -60,15 +68,24 @@ class CourseDetailResponse(BaseModel):
     title: str
     description: str | None = None
     status: str
-    lesson_count: int
+    total_lessons: int
     topic_count: int
+    progress_pct: float = 0.0
     is_enrolled: bool
     enrolled_at: datetime | None = None
     lessons: list[LessonDetail]
 
 
 # ------------------------------------------------------------------------------
-# POST /courses/{id}/enroll
+# GET /courses/{id}/lessons/{lesson_id}
+# ------------------------------------------------------------------------------
+
+class LessonDetailResponse(LessonDetail):
+    course_id: int
+
+
+# ------------------------------------------------------------------------------
+# API-07: POST /courses/{id}/enroll
 # ------------------------------------------------------------------------------
 
 class EnrollmentResponse(BaseModel):
@@ -77,5 +94,6 @@ class EnrollmentResponse(BaseModel):
     enrollment_id: int
     user_id: int
     course_id: int
+    status: str = "ACTIVE"
     enrolled_at: datetime
     message: str = "Ghi danh môn học thành công"

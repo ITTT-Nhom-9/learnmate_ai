@@ -47,7 +47,20 @@ class Settings(BaseSettings):
     # Internal communication
     INTERNAL_API_KEY: str = Field(default="LM_Internal_Key_987654")
     AI_SERVICE_URL: str = Field(default="http://localhost:8000")
-    
+
+    # CORS: danh sach origin Frontend, phan tach boi dau phay.
+    # Khong dung "*" vi allow_credentials=True (trinh duyet se chan theo chuan W3C CORS).
+    CORS_ORIGINS: str = Field(
+        default=(
+            "http://localhost:5173,http://127.0.0.1:5173,"
+            "http://localhost:3000,http://127.0.0.1:3000"
+        )
+    )
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        return [o.strip().rstrip("/") for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
     model_config = SettingsConfigDict(
         env_file=ENV_FILES,
         env_file_encoding="utf-8",

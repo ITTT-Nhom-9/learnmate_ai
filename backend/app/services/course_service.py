@@ -40,14 +40,21 @@ class CourseService:
     # --------------------------------------------------------------------------
     # Danh sach mon hoc (FR-CM-01)
     # --------------------------------------------------------------------------
-    def list_courses(self, user: User) -> list[tuple[Course, CourseStats, Enrollment | None]]:
+    def list_courses(
+        self, user: User, page: int = 1, limit: int = 10
+    ) -> tuple[list[tuple[Course, CourseStats, Enrollment | None]], int]:
+        """Tra ve (cac mon cua trang hien tai, tong so mon ACTIVE)."""
+        active = Course.status == CourseStatus.ACTIVE.value
+        total = self.db.scalar(select(func.count(Course.id)).where(active)) or 0
         courses = self.db.scalars(
             select(Course)
-            .where(Course.status == CourseStatus.ACTIVE.value)
-            .order_by(Course.code)
+            .where(active)
+            .order_by(Course.code, Course.id)
+            .offset((page - 1) * limit)
+            .limit(limit)
         ).all()
         if not courses:
-            return []
+            return [], total
 
         course_ids = [c.id for c in courses]
         stats = self._stats_for(course_ids)
@@ -60,7 +67,7 @@ class CourseService:
                 )
             )
         }
-        return [(c, stats.get(c.id, CourseStats()), enrollments.get(c.id)) for c in courses]
+        return [(c, stats.get(c.id, CourseStats()), enrollments.get(c.id)) for c in courses], total
 
     # --------------------------------------------------------------------------
     # Chi tiet mon hoc: cay bai hoc + chu de + noi dung (FR-CM-03)
@@ -82,6 +89,24 @@ class CourseService:
             topic_count=sum(len(lesson.topics) for lesson in course.lessons),
         )
         return course, stats, self._get_enrollment(user.id, course.id)
+
+    # --------------------------------------------------------------------------
+    # Chi tiet 1 bai hoc: chu de + noi dung ly thuyet
+    # --------------------------------------------------------------------------
+    def get_lesson_detail(self, course_id: int, lesson_id: int) -> Lesson:
+        lesson = self.db.scalar(
+            select(Lesson)
+            .join(Course, Course.id == Lesson.course_id)
+            .where(
+                Lesson.id == lesson_id,
+                Lesson.course_id == course_id,
+                Course.status == CourseStatus.ACTIVE.value,
+            )
+            .options(selectinload(Lesson.topics), selectinload(Lesson.contents))
+        )
+        if lesson is None:
+            raise CourseNotFoundError("Bài học không tồn tại")
+        return lesson
 
     # --------------------------------------------------------------------------
     # Ghi danh mon hoc (FR-CM-02) - rang buoc UNIQUE(user_id, course_id)
