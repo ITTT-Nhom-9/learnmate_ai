@@ -275,7 +275,7 @@ export default function CourseDetailPage() {
                 <ArrowRight size={18} aria-hidden="true" />
               </Button>
             )}
-            <Button icon={Sparkles} className="flex-1 whitespace-nowrap lg:ml-auto lg:flex-none" onClick={() => navigate(`/tutor/${activeLesson.id}`)}>
+            <Button icon={Sparkles} className="flex-1 whitespace-nowrap lg:ml-auto lg:flex-none" onClick={() => navigate(`/tutor/${activeLesson.id}?course=${courseId}`)}>
               <span className="sm:hidden">Học cùng Gia sư AI</span>
               <span className="hidden sm:inline">Học cùng Gia sư AI bài này</span>
             </Button>

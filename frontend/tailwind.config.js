@@ -10,6 +10,16 @@ export default {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
+      keyframes: {
+        'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
+        'slide-in-left': { from: { transform: 'translateX(-100%)' }, to: { transform: 'translateX(0)' } },
+        'slide-in-up': { from: { transform: 'translateY(100%)' }, to: { transform: 'translateY(0)' } },
+      },
+      animation: {
+        'fade-in': 'fade-in 0.15s ease-out',
+        'slide-in-left': 'slide-in-left 0.2s ease-out',
+        'slide-in-up': 'slide-in-up 0.22s ease-out',
+      },
       colors: {
         brand: {
           50: '#eef2ff',

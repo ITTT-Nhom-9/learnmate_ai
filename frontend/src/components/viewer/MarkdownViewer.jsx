@@ -1,9 +1,11 @@
+import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import CodeBlock from './CodeBlock';
+import { normalizeMath } from '../../utils/markdown';
 
 // react-markdown KHÔNG render HTML thô trong Markdown (an toàn trước XSS), chỉ render phần tử đã khai báo dưới đây.
 const components = {
@@ -46,13 +48,39 @@ const components = {
   },
 };
 
-/** Hiển thị Markdown bài giảng: bảng/danh sách (GFM), công thức KaTeX ($...$, $$...$$), khối mã Prism. */
-export default function MarkdownViewer({ source }) {
+// Biến thể "chat": chữ nhỏ hơn, tiêu đề gọn, KHÔNG tải ảnh. Nội dung do AI sinh ra là dữ liệu không tin cậy:
+// ảnh Markdown có thể trỏ tới URL bên ngoài để theo dõi người đọc, nên chỉ hiển thị phần mô tả thay ảnh.
+const chatComponents = {
+  ...components,
+  h1: (props) => <h3 className="mb-2 mt-4 text-base font-bold text-navy-800 first:mt-0" {...props} />,
+  h2: (props) => <h4 className="mb-2 mt-4 text-[15px] font-semibold text-navy-800 first:mt-0" {...props} />,
+  h3: (props) => <h5 className="mb-1.5 mt-3 text-sm font-semibold text-navy-800 first:mt-0" {...props} />,
+  h4: (props) => <h6 className="mb-1.5 mt-3 text-sm font-semibold text-navy-800 first:mt-0" {...props} />,
+  p: (props) => <p className="my-2 leading-7 text-slate-700 first:mt-0 last:mb-0" {...props} />,
+  ul: (props) => <ul className="my-2 list-disc space-y-1 pl-5 text-slate-700 marker:text-slate-400" {...props} />,
+  ol: (props) => <ol className="my-2 list-decimal space-y-1 pl-5 text-slate-700 marker:text-slate-400" {...props} />,
+  img: ({ alt }) => (alt ? <span className="text-slate-500">[Hình: {alt}]</span> : null),
+};
+
+const VARIANTS = {
+  lesson: { components, className: 'min-w-0 break-words text-[15px]' },
+  chat: { components: chatComponents, className: 'chat-prose min-w-0 break-words text-[14.5px]' },
+};
+
+/**
+ * Hiển thị Markdown: bảng/danh sách (GFM), công thức KaTeX ($...$, $$...$$), khối mã Prism.
+ * variant="lesson" cho nội dung bài giảng, variant="chat" cho tin nhắn của Gia sư AI.
+ */
+function MarkdownViewer({ source, variant = 'lesson' }) {
+  const { components: map, className } = VARIANTS[variant] || VARIANTS.lesson;
   return (
-    <div className="min-w-0 break-words text-[15px]">
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={components}>
-        {source || ''}
+    <div className={className}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={map}>
+        {variant === 'chat' ? normalizeMath(source) : source || ''}
       </ReactMarkdown>
     </div>
   );
 }
+
+// memo: tin nhắn cũ không bị parse lại Markdown/KaTeX mỗi khi tin nhắn đang stream cập nhật
+export default memo(MarkdownViewer);
