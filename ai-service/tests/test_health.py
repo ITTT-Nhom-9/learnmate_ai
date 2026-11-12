@@ -17,4 +17,7 @@ def test_ai_health():
     data = response.json()
     assert data["status"] == "healthy"
     assert data["service"] == "ai-microservice"
-
+    assert "provider" in data
+    assert "model" in data
+    assert isinstance(data["api_key_configured"], bool)
+    assert "GEMINI_API_KEY" not in str(data)
