@@ -11,6 +11,7 @@ import ProtectedRoute, { GuestRoute } from './ProtectedRoute';
 
 // Trang chi tiết môn kéo theo thư viện Markdown/KaTeX/Prism (nặng) -> chỉ tải khi người dùng mở môn học
 const CourseDetailPage = lazy(() => import('../features/courses/CourseDetailPage'));
+const TutorChatPage = lazy(() => import('../features/tutor/TutorChatPage'));
 
 const pageFallback = (
   <div className="flex justify-center py-24 text-slate-400">
@@ -39,8 +40,23 @@ export default function AppRoutes() {
               </Suspense>
             }
           />
-          <Route path="/tutor" element={<PlaceholderPage title="Gia sư AI" />} />
-          <Route path="/tutor/:lessonId" element={<PlaceholderPage title="Gia sư AI" />} />
+          {/* SCR-04: /tutor (mở bài học gần nhất) và /tutor/:lessonId?course=:courseId */}
+          <Route
+            path="/tutor"
+            element={
+              <Suspense fallback={pageFallback}>
+                <TutorChatPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/tutor/:lessonId"
+            element={
+              <Suspense fallback={pageFallback}>
+                <TutorChatPage />
+              </Suspense>
+            }
+          />
           <Route path="/progress" element={<PlaceholderPage title="Bảng tiến độ" />} />
         </Route>
       </Route>
