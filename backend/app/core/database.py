@@ -41,3 +41,8 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def get_session_factory() -> sessionmaker:
+    """Factory tao Session moi, dung cho tac vu chay sau khi request da tra ve (vd: SSE stream)."""
+    return SessionLocal

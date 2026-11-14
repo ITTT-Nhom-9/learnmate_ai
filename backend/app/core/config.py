@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     # Internal communication
     INTERNAL_API_KEY: str = Field(default="LM_Internal_Key_987654")
     AI_SERVICE_URL: str = Field(default="http://localhost:8000")
+    AI_SERVICE_TIMEOUT_SECONDS: float = Field(default=60.0)
+
+    # AI Tutor - QuotaGuard (BR-05): so cau hoi toi da moi sinh vien / ngay (theo gio Viet Nam)
+    TUTOR_DAILY_QUOTA: int = Field(default=50)
+    TUTOR_HISTORY_WINDOW: int = Field(default=10)
 
     # CORS: danh sach origin Frontend, phan tach boi dau phay.
     # Khong dung "*" vi allow_credentials=True (trinh duyet se chan theo chuan W3C CORS).
