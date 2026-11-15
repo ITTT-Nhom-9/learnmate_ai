@@ -4,6 +4,16 @@ from app.schemas.tutor_schema import (
     TutorRequestDTO,
     TutorResponseDTO,
 )
+from app.schemas.socratic_schema import (
+    MAX_SOCRATIC_STEPS,
+    STAGE_NAMES,
+    STEP_TO_STAGE,
+    SocraticFeedback,
+    SocraticStage,
+    SocraticStepRequest,
+    SocraticStepResponse,
+    StudentEvaluation,
+)
 from app.schemas.quiz_schema import (
     QuizBundleOut,
     QuizDifficultyEnum,
@@ -18,6 +28,14 @@ __all__ = [
     "LLMUsageDTO",
     "TutorRequestDTO",
     "TutorResponseDTO",
+    "SocraticStage",
+    "StudentEvaluation",
+    "STAGE_NAMES",
+    "STEP_TO_STAGE",
+    "SocraticFeedback",
+    "SocraticStepRequest",
+    "SocraticStepResponse",
+    "MAX_SOCRATIC_STEPS",
     "QuizDifficultyEnum",
     "QuizOptionDTO",
     "QuizQuestionSpec",
