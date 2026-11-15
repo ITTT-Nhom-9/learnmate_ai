@@ -10,9 +10,7 @@ from app.models.chat import ChatMessage, ChatMode, ChatRole, ChatSession, ChatSe
 from app.models.course import Course, CourseStatus, Lesson
 from app.models.user import User
 from app.services.quota_guard import QuotaGuard
-
-# BR-02: Socratic toi da 5 buoc goi mo, buoc 5 la tong ket
-SOCRATIC_MAX_STEPS = 5
+from app.services.socratic_service import SocraticEngine, SOCRATIC_MAX_STEPS
 # Gioi han do dai ngu canh bai hoc gui sang AI service (tranh prompt qua dai)
 LESSON_CONTEXT_MAX_CHARS = 6000
 
@@ -64,7 +62,8 @@ class TutorService:
 
         previous_hint_level = session.hint_level or 0
         if mode == ChatMode.SOCRATIC.value:
-            session.hint_level = min(previous_hint_level + 1, SOCRATIC_MAX_STEPS)
+            instruction = SocraticEngine.evaluate_next_step(session)
+            session.hint_level = instruction.hint_level
 
         user_msg = ChatMessage(
             session_id=session.id,
