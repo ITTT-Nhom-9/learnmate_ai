@@ -224,6 +224,8 @@ class AttemptAnswer(Base):
         nullable=True,
         index=True
     )
+    # Kết quả chấm của câu (BR-08): True nếu chọn đúng, False nếu sai hoặc bỏ trống
+    is_correct = Column(Boolean, nullable=False, default=False)
 
     # Quan hệ N:1
     attempt = relationship("QuizAttempt", back_populates="answers")

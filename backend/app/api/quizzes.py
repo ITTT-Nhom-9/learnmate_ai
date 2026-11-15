@@ -3,6 +3,7 @@
 Endpoints:
 - POST /api/v1/quizzes/generate: Sinh bài trắc nghiệm thích ứng từ nội dung bài học.
 - POST /api/v1/quiz/generate: Tuyến đường alias hỗ trợ tương thích ngược.
+- POST /api/v1/quiz/submit: Nộp bài, chấm điểm tự động thang 10 và lưu lịch sử làm bài (BR-08).
 """
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -10,9 +11,15 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.quiz import QuizGenerateRequest, QuizPublicResponse
+from app.schemas.quiz import (
+    QuizGenerateRequest,
+    QuizPublicResponse,
+    QuizSubmitRequest,
+    QuizSubmitResponse,
+)
 from app.services.ai_quiz_client import AIQuizClient, get_ai_quiz_client
 from app.services.quiz_service import QuizService
+from app.services.quiz_submission_service import QuizSubmissionService
 
 router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
 # Router phụ dành cho alias /quiz
@@ -62,3 +69,25 @@ async def generate_quiz_alias_endpoint(
     ai_client: AIQuizClient = Depends(get_ai_quiz_client),
 ) -> QuizPublicResponse:
     return await generate_quiz_endpoint(payload, current_user, db, ai_client)
+
+
+@alias_router.post(
+    "/submit",
+    response_model=QuizSubmitResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Nộp bài trắc nghiệm và chấm điểm tự động thang 10 (BR-08)",
+    description=(
+        "Cách hoạt động:\n"
+        "1. Xác thực sinh viên qua Access Token JWT.\n"
+        "2. Kiểm tra câu hỏi thuộc đề và phương án thuộc câu hỏi; câu không gửi lên được tính là bỏ trống.\n"
+        "3. So khớp với đáp án đúng trong CSDL, tính điểm = số câu đúng / tổng số câu × 10.\n"
+        "4. Lưu lượt làm bài vào quiz_attempts và đúng/sai từng câu vào attempt_answers.\n"
+        "5. Trả về điểm, đáp án đúng và lời giải từng câu (chỉ sau khi đã nộp bài)."
+    ),
+)
+def submit_quiz_endpoint(
+    payload: QuizSubmitRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> QuizSubmitResponse:
+    return QuizSubmissionService(db).submit(current_user, payload)

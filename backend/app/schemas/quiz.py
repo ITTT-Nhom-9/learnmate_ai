@@ -62,3 +62,57 @@ class QuizPublicResponse(BaseModel):
     questions: List[QuestionPublicOut] = Field(
         ..., description="Danh sách các câu hỏi trắc nghiệm an toàn bảo mật"
     )
+
+
+# ==============================================================================
+# NỘP BÀI & CHẤM ĐIỂM (BR-08)
+# ==============================================================================
+
+class AnswerSubmitIn(BaseModel):
+    """Một câu trả lời sinh viên gửi lên. selected_option_id = null nghĩa là bỏ trống."""
+
+    question_id: int = Field(..., description="Định danh câu hỏi")
+    selected_option_id: Optional[int] = Field(
+        default=None, description="Định danh phương án sinh viên chọn (null nếu bỏ trống)"
+    )
+
+
+class QuizSubmitRequest(BaseModel):
+    """DTO nộp bài trắc nghiệm."""
+
+    quiz_id: int = Field(..., description="Định danh bài quiz đang làm")
+    duration_sec: int = Field(
+        ..., ge=0, le=86400, description="Thời gian làm bài tính bằng giây"
+    )
+    answers: List[AnswerSubmitIn] = Field(
+        default_factory=list,
+        max_length=100,
+        description="Danh sách câu trả lời. Câu không có trong danh sách được tính là bỏ trống (sai).",
+    )
+
+
+class AnswerResultOut(BaseModel):
+    """Kết quả chấm từng câu. Sau khi nộp bài mới được lộ đáp án đúng và lời giải."""
+
+    question_id: int
+    selected_option_id: Optional[int]
+    selected_label: Optional[str]
+    correct_option_id: Optional[int]
+    correct_label: Optional[str]
+    is_correct: bool
+    explanation: str
+
+
+class QuizSubmitResponse(BaseModel):
+    """Kết quả bài làm sau khi chấm."""
+
+    attempt_id: int
+    quiz_id: int
+    score: float = Field(..., ge=0, le=10, description="Điểm thang 10, làm tròn 2 chữ số")
+    total_questions: int
+    correct_count: int
+    wrong_count: int
+    unanswered_count: int
+    duration_sec: int
+    status: str
+    answers: List[AnswerResultOut]
