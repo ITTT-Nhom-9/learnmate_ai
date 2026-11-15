@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BookX, ListTree, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookX, HelpCircle, ListTree, Sparkles } from 'lucide-react';
 import AlertBox from '../../components/common/AlertBox';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
@@ -275,6 +275,18 @@ export default function CourseDetailPage() {
                 <ArrowRight size={18} aria-hidden="true" />
               </Button>
             )}
+            <Button
+              variant="outline"
+              icon={HelpCircle}
+              className="whitespace-nowrap"
+              onClick={() => {
+                const targetTopicId = activeTopicId || activeLesson?.topics?.[0]?.id || 1;
+                navigate(`/quiz/${targetTopicId}?lessonId=${activeLesson.id}&courseId=${courseId}`);
+              }}
+            >
+              <span className="sm:hidden">Làm Quiz</span>
+              <span className="hidden sm:inline">Làm Quiz luyện tập</span>
+            </Button>
             <Button icon={Sparkles} className="flex-1 whitespace-nowrap lg:ml-auto lg:flex-none" onClick={() => navigate(`/tutor/${activeLesson.id}?course=${courseId}`)}>
               <span className="sm:hidden">Học cùng Gia sư AI</span>
               <span className="hidden sm:inline">Học cùng Gia sư AI bài này</span>
