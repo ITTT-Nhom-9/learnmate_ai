@@ -91,3 +91,47 @@ def submit_quiz_endpoint(
     db: Session = Depends(get_db),
 ) -> QuizSubmitResponse:
     return QuizSubmissionService(db).submit(current_user, payload)
+
+
+@router.post(
+    "/submit",
+    response_model=QuizSubmitResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Nộp bài trắc nghiệm (chuẩn /quizzes/submit)",
+)
+def submit_quiz_router_endpoint(
+    payload: QuizSubmitRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> QuizSubmitResponse:
+    return submit_quiz_endpoint(payload, current_user, db)
+
+
+@router.post(
+    "/{quiz_id}/submit",
+    response_model=QuizSubmitResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Nộp bài trắc nghiệm theo quiz_id (API-11: POST /quizzes/{id}/submit)",
+)
+def submit_quiz_by_id_endpoint(
+    quiz_id: int,
+    payload: QuizSubmitRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> QuizSubmitResponse:
+    if payload.quiz_id != quiz_id:
+        payload = payload.model_copy(update={"quiz_id": quiz_id})
+    return submit_quiz_endpoint(payload, current_user, db)
+
+
+@router.get(
+    "/attempts/{attempt_id}",
+    response_model=QuizSubmitResponse,
+    summary="Lấy chi tiết kết quả làm bài trắc nghiệm (SCR-06)",
+)
+def get_attempt_endpoint(
+    attempt_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> QuizSubmitResponse:
+    return QuizSubmissionService(db).get_attempt(current_user, attempt_id)

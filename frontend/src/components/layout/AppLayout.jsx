@@ -8,13 +8,17 @@ export default function AppLayout() {
   // Màn chat Gia sư AI tự chiếm trọn phần còn lại và ghim ô nhập ở đáy -> không hiện Bottom Navigation
   const isChat = pathname === '/tutor' || pathname.startsWith('/tutor/');
 
+  // Màn làm bài trắc nghiệm (/quiz/:topicId) dùng thanh thao tác riêng ở đáy (Câu trước / Câu tiếp / Nộp bài)
+  const isQuizTake = /^\/quiz\/[^/]+\/?$/.test(pathname);
+  const hideBottomNav = isChat || isQuizTake;
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Header />
-      <main className={isChat ? '' : 'pb-24 lg:pb-10'}>
+      <main className={isChat ? '' : isQuizTake ? 'lg:pb-10' : 'pb-24 lg:pb-10'}>
         <Outlet />
       </main>
-      {!isChat && <BottomNav />}
+      {!hideBottomNav && <BottomNav />}
     </div>
   );
 }

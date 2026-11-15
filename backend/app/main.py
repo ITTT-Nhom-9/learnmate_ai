@@ -2,6 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect, text
 from app.core.config import settings
 from app.core.database import Base, engine, ensure_database_exists
 import app.models  # Dang ky toan bo 7 bang ORM vao Base.metadata
@@ -12,10 +13,20 @@ logger = logging.getLogger("uvicorn.error")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Tu dong kiem tra, tao database va 7 bang CSDL khi khoi dong backend
+    # Tu dong kiem tra, tao database va dong bo CSDL khi khoi dong backend
     try:
         ensure_database_exists()
         Base.metadata.create_all(bind=engine)
+
+        # Tu dong kiem tra va bo sung cot moi vao bang da ton tai (vi create_all khong tu ALTER TABLE)
+        with engine.begin() as conn:
+            inspector = inspect(conn)
+            if "attempt_answers" in inspector.get_table_names():
+                existing_cols = [c["name"] for c in inspector.get_columns("attempt_answers")]
+                if "is_correct" not in existing_cols:
+                    conn.execute(text("ALTER TABLE attempt_answers ADD COLUMN is_correct BOOLEAN DEFAULT 0 NOT NULL;"))
+                    logger.info("[Database] Da tu dong bo sung cot is_correct vao bang attempt_answers.")
+
         tables = list(Base.metadata.tables.keys())
         logger.info(f"[Database] Ket noi CSDL thanh cong tai port {settings.MYSQL_HOST_PORT}.")
         logger.info(f"[Database] Da kiem tra va dong bo {len(tables)} bang: {', '.join(tables)}")

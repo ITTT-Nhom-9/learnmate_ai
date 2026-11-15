@@ -5,6 +5,7 @@ const VARIANTS = {
   primary: 'bg-navy-800 text-white hover:bg-navy-900 disabled:hover:bg-navy-800',
   outline: 'border border-slate-300 bg-white text-navy-800 hover:bg-slate-50 disabled:hover:bg-white',
   ghost: 'text-slate-600 hover:bg-slate-100 disabled:hover:bg-transparent',
+  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:hover:bg-red-600',
 };
 
 const SIZES = {

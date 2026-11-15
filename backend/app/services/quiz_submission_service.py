@@ -138,3 +138,59 @@ class QuizSubmissionService:
             status=attempt.status,
             answers=results,
         )
+
+    def get_attempt(self, user: User, attempt_id: int) -> QuizSubmitResponse:
+        attempt = self.db.scalar(
+            select(QuizAttempt)
+            .options(
+                selectinload(QuizAttempt.quiz).selectinload(Quiz.questions).selectinload(Question.options),
+                selectinload(QuizAttempt.answers),
+            )
+            .where(QuizAttempt.id == attempt_id, QuizAttempt.user_id == user.id)
+        )
+        if attempt is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lượt làm bài không tồn tại")
+
+        quiz = attempt.quiz
+        answers_by_qid = {ans.question_id: ans for ans in attempt.answers}
+
+        results: list[AnswerResultOut] = []
+        correct_count = 0
+        unanswered_count = 0
+        for question in quiz.questions:
+            ans_record = answers_by_qid.get(question.id)
+            selected_id = ans_record.selected_option_id if ans_record else None
+            correct_opt = next((o for o in question.options if o.is_correct), None)
+            selected_opt = next((o for o in question.options if o.id == selected_id), None)
+            is_correct = selected_opt is not None and selected_opt.is_correct
+
+            if selected_opt is None:
+                unanswered_count += 1
+            if is_correct:
+                correct_count += 1
+
+            results.append(
+                AnswerResultOut(
+                    question_id=question.id,
+                    selected_option_id=selected_id,
+                    selected_label=selected_opt.opt_label if selected_opt else None,
+                    correct_option_id=correct_opt.id if correct_opt else None,
+                    correct_label=correct_opt.opt_label if correct_opt else None,
+                    is_correct=is_correct,
+                    explanation=question.explanation or "",
+                )
+            )
+
+        total = len(quiz.questions)
+        return QuizSubmitResponse(
+            attempt_id=attempt.id,
+            quiz_id=quiz.id,
+            score=float(attempt.score),
+            total_questions=total,
+            correct_count=correct_count,
+            wrong_count=total - correct_count,
+            unanswered_count=unanswered_count,
+            duration_sec=attempt.duration_sec,
+            status=attempt.status,
+            answers=results,
+        )

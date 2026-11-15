@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, FileText } from 'lucide-react';
+import { BookOpen, ClipboardCheck, FileText } from 'lucide-react';
 
 /**
  * Cột phải: ngữ cảnh của bài học (các chủ đề kiến thức). Bấm vào chủ đề để điền sẵn câu hỏi vào ô chat.
@@ -49,6 +49,12 @@ export default function TopicPanel({ course, lesson, onAsk }) {
                 {topic.description && <span className="mt-1.5 line-clamp-3 block text-xs leading-relaxed text-slate-500">{topic.description}</span>}
                 <span className="mt-2 block text-xs font-medium text-blue-600">Hỏi gia sư về chủ đề này →</span>
               </button>
+              <Link
+                to={`/quiz/${topic.id}?lesson=${lesson.id}`}
+                className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-navy-800 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+              >
+                <ClipboardCheck size={16} aria-hidden="true" /> Làm bài trắc nghiệm
+              </Link>
             </li>
           ))}
         </ul>

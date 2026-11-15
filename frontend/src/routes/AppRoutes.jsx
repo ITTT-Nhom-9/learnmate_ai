@@ -12,6 +12,8 @@ import ProtectedRoute, { GuestRoute } from './ProtectedRoute';
 // Trang chi tiết môn kéo theo thư viện Markdown/KaTeX/Prism (nặng) -> chỉ tải khi người dùng mở môn học
 const CourseDetailPage = lazy(() => import('../features/courses/CourseDetailPage'));
 const TutorChatPage = lazy(() => import('../features/tutor/TutorChatPage'));
+const QuizTakePage = lazy(() => import('../features/quiz/QuizTakePage')); // SCR-05
+const QuizResultPage = lazy(() => import('../features/quiz/QuizResultPage')); // SCR-06
 
 const pageFallback = (
   <div className="flex justify-center py-24 text-slate-400">
@@ -54,6 +56,23 @@ export default function AppRoutes() {
             element={
               <Suspense fallback={pageFallback}>
                 <TutorChatPage />
+              </Suspense>
+            }
+          />
+          {/* SCR-05: làm bài có đồng hồ đếm ngược (topicId); SCR-06: xem kết quả (attemptId) */}
+          <Route
+            path="/quiz/:topicId"
+            element={
+              <Suspense fallback={pageFallback}>
+                <QuizTakePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/quiz/:attemptId/result"
+            element={
+              <Suspense fallback={pageFallback}>
+                <QuizResultPage />
               </Suspense>
             }
           />
