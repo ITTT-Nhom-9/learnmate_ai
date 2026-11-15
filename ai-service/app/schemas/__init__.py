@@ -14,6 +14,14 @@ from app.schemas.socratic_schema import (
     SocraticStepResponse,
     StudentEvaluation,
 )
+from app.schemas.quiz_schema import (
+    QuizBundleOut,
+    QuizDifficultyEnum,
+    QuizGenerationResponse,
+    QuizGenerationSpec,
+    QuizOptionDTO,
+    QuizQuestionSpec,
+)
 
 __all__ = [
     "ChatMessageDTO",
@@ -27,4 +35,11 @@ __all__ = [
     "SocraticFeedback",
     "SocraticStepRequest",
     "SocraticStepResponse",
+    "MAX_SOCRATIC_STEPS",
+    "QuizDifficultyEnum",
+    "QuizOptionDTO",
+    "QuizQuestionSpec",
+    "QuizBundleOut",
+    "QuizGenerationSpec",
+    "QuizGenerationResponse",
 ]
