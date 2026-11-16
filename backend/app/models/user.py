@@ -84,6 +84,42 @@ class User(Base):
         passive_deletes=True
     )
 
+    # Quan hệ 1:N với TopicMastery (TK-19 / Phân hệ 6)
+    topic_masteries = relationship(
+        "TopicMastery",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
+    # Quan hệ 1:N với Recommendation (TK-19 / Phân hệ 6)
+    recommendations = relationship(
+        "Recommendation",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
+    # Quan hệ 1:N với LearningEvent (TK-19 / Phân hệ 6)
+    learning_events = relationship(
+        "LearningEvent",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
+    # Quan hệ 1:N với Document tải lên (TK-19 / Phân hệ 8)
+    uploaded_documents = relationship(
+        "Document",
+        back_populates="uploader"
+    )
+
+    # Quan hệ 1:N với AIRequestLog (TK-19 / Phân hệ 7)
+    ai_request_logs = relationship(
+        "AIRequestLog",
+        back_populates="user"
+    )
+
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email='{self.email}', role='{self.role}')>"
 

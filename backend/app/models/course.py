@@ -60,6 +60,14 @@ class Course(Base):
         order_by="Lesson.order_index"
     )
 
+    # Quan hệ 1:N với Document giáo trình PDF (TK-19 / Phân hệ 8)
+    documents = relationship(
+        "Document",
+        back_populates="course",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
     def __repr__(self) -> str:
         return f"<Course(id={self.id}, code='{self.code}', title='{self.title}')>"
 
@@ -182,6 +190,28 @@ class Topic(Base):
         back_populates="topic",
         cascade="all, delete-orphan",
         passive_deletes=True
+    )
+
+    # Quan hệ 1:N với TopicMastery (TK-19 / Phân hệ 6)
+    masteries = relationship(
+        "TopicMastery",
+        back_populates="topic",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
+    # Quan hệ 1:N với Recommendation (TK-19 / Phân hệ 6)
+    recommendations = relationship(
+        "Recommendation",
+        back_populates="topic",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
+    # Quan hệ 1:N với LearningEvent (TK-19 / Phân hệ 6)
+    learning_events = relationship(
+        "LearningEvent",
+        back_populates="topic"
     )
 
     def __repr__(self) -> str:

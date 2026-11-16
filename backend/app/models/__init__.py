@@ -25,6 +25,26 @@ from app.models.quiz import (
     QuizDifficulty,
     QuizAttemptStatus,
 )
+from app.models.mastery import (
+    TopicMastery,
+    UserTopicMastery,
+    MasteryStatus,
+    Recommendation,
+    RecommendationAction,
+    RecommendationStatus,
+    LearningEvent,
+    StudentActivityLog,
+    LearningEventType,
+)
+from app.models.rag import (
+    Document,
+    DocumentChunk,
+    AIRequestLog,
+    AIFeature,
+    AIProvider,
+    PromptTemplate,
+    SystemSetting,
+)
 
 __all__ = [
     "Base",
@@ -55,4 +75,22 @@ __all__ = [
     "AttemptAnswer",
     "QuizDifficulty",
     "QuizAttemptStatus",
+    # Mastery models (TK-19 / Phân hệ 6)
+    "TopicMastery",
+    "UserTopicMastery",
+    "MasteryStatus",
+    "Recommendation",
+    "RecommendationAction",
+    "RecommendationStatus",
+    "LearningEvent",
+    "StudentActivityLog",
+    "LearningEventType",
+    # RAG & Admin models (TK-19 / Phân hệ 7 & 8)
+    "Document",
+    "DocumentChunk",
+    "AIRequestLog",
+    "AIFeature",
+    "AIProvider",
+    "PromptTemplate",
+    "SystemSetting",
 ]
