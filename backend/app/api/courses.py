@@ -13,6 +13,7 @@ from app.schemas.course import (
     LessonDetailResponse,
 )
 from app.services.course_service import CourseError, CourseService, enrolled_at_of
+from app.services.mastery_service import MasteryService
 
 router = APIRouter(prefix="/courses", tags=["Courses"])
 
@@ -33,6 +34,7 @@ def list_courses(
     db: Session = Depends(get_db),
 ):
     rows, total = CourseService(db).list_courses(current_user, page=page, limit=limit)
+    mastery_service = MasteryService(db)
     courses = [
         CourseSummary(
             id=course.id,
@@ -42,6 +44,7 @@ def list_courses(
             status=course.status,
             total_lessons=stats.lesson_count,
             topic_count=stats.topic_count,
+            progress_pct=mastery_service.calculate_course_progress(current_user.id, course.id) if enrollment else 0.0,
             is_enrolled=enrollment is not None,
             enrolled_at=enrolled_at_of(enrollment),
         )
@@ -64,6 +67,24 @@ def get_course_detail(
         course, stats, enrollment = CourseService(db).get_course_detail(course_id, current_user)
     except CourseError as exc:
         raise _to_http(exc)
+
+    mastery_service = MasteryService(db)
+    progress_pct = (
+        mastery_service.calculate_course_progress(current_user.id, course.id)
+        if enrollment
+        else 0.0
+    )
+    mastery_map = (
+        mastery_service.get_course_topics_mastery_map(current_user.id, course.id)
+        if enrollment
+        else {}
+    )
+
+    # Đính kèm điểm Mastery thực tế của từng chủ đề cho sinh viên
+    for lesson in course.lessons:
+        for topic in lesson.topics:
+            setattr(topic, "mastery_score", mastery_map.get(topic.id, 0.0))
+
     return CourseDetailResponse(
         id=course.id,
         code=course.code,
@@ -72,6 +93,7 @@ def get_course_detail(
         status=course.status,
         total_lessons=stats.lesson_count,
         topic_count=stats.topic_count,
+        progress_pct=progress_pct,
         is_enrolled=enrollment is not None,
         enrolled_at=enrolled_at_of(enrollment),
         lessons=[LessonDetail.model_validate(lesson) for lesson in course.lessons],
