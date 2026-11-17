@@ -21,11 +21,18 @@ async def lifespan(app: FastAPI):
         # Tu dong kiem tra va bo sung cot moi vao bang da ton tai (vi create_all khong tu ALTER TABLE)
         with engine.begin() as conn:
             inspector = inspect(conn)
-            if "attempt_answers" in inspector.get_table_names():
+            all_tables = inspector.get_table_names()
+            if "attempt_answers" in all_tables:
                 existing_cols = [c["name"] for c in inspector.get_columns("attempt_answers")]
                 if "is_correct" not in existing_cols:
                     conn.execute(text("ALTER TABLE attempt_answers ADD COLUMN is_correct BOOLEAN DEFAULT 0 NOT NULL;"))
                     logger.info("[Database] Da tu dong bo sung cot is_correct vao bang attempt_answers.")
+
+            # Ho tro view alias cho Excel (user_topic_mastery, student_activity_logs) va SDD
+            if "topic_mastery" in all_tables and "user_topic_mastery" not in all_tables:
+                conn.execute(text("CREATE OR REPLACE VIEW user_topic_mastery AS SELECT * FROM topic_mastery;"))
+            if "learning_events" in all_tables and "student_activity_logs" not in all_tables:
+                conn.execute(text("CREATE OR REPLACE VIEW student_activity_logs AS SELECT * FROM learning_events;"))
 
         tables = list(Base.metadata.tables.keys())
         logger.info(f"[Database] Ket noi CSDL thanh cong tai port {settings.MYSQL_HOST_PORT}.")
