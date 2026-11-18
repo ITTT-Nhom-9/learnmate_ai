@@ -34,6 +34,10 @@ class MasteryStatus(str, enum.Enum):
     MASTER = "MASTER"    # Từ 80% trở lên: Đã thành thạo chuyên sâu
 
 
+# Bí danh tương thích 100% với mã nguồn mẫu trong SDD Bảng 7
+TopicStatusEnum = MasteryStatus
+
+
 class RecommendationAction(str, enum.Enum):
     """Loại hành động khuyến nghị ôn tập (SDD Bảng 16)."""
     REVIEW_THEORY = "REVIEW_THEORY"    # Đọc lại nội dung lý thuyết

@@ -126,6 +126,24 @@ class QuizSubmissionService:
         attempt.score = score
         self.db.commit()
 
+        # Cập nhật điểm Mastery EMA thích ứng sau khi nộp bài (TK-20 / BR-01, BR-08)
+        if quiz.topic_id:
+            try:
+                from app.services.mastery_service import MasteryService
+
+                MasteryService(self.db).update_mastery_after_quiz(
+                    user_id=user.id,
+                    topic_id=quiz.topic_id,
+                    quiz_score=float(score),
+                    duration_sec=payload.duration_sec,
+                )
+            except Exception as exc:
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    "Không thể cập nhật Mastery sau khi nộp bài quiz: %s", exc
+                )
+
         return QuizSubmitResponse(
             attempt_id=attempt.id,
             quiz_id=quiz.id,
