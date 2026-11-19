@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RefreshCw, AlertTriangle, LineChart, History } from 'lucide-react';
+import { RefreshCw, AlertTriangle, BarChart3, LineChart, History } from 'lucide-react';
 import Spinner from '../../components/common/Spinner';
 import Button from '../../components/common/Button';
 import CourseSelector from './CourseSelector';
@@ -35,7 +35,10 @@ export default function ProgressDashboardPage() {
       {/* Header */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-navy-800 sm:text-2xl">📊 Bảng tiến độ học tập</h1>
+          <h1 className="flex items-center gap-2 text-xl font-bold text-navy-800 sm:text-2xl">
+            <BarChart3 size={24} className="shrink-0 text-brand-500" aria-hidden="true" />
+            Bảng tiến độ học tập
+          </h1>
           <p className="mt-0.5 text-sm text-slate-500">Theo dõi tiến độ và năng lực từng chủ đề</p>
         </div>
         <div className="flex items-center gap-3">
