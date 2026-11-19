@@ -1,11 +1,11 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import ACCESS_TOKEN_TYPE, decode_token
-from app.models.user import User, UserStatus
+from app.core.security import ACCESS_TOKEN_TYPE, decode_token, JWTError
+from app.models.user import User, UserRole, UserStatus
+
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -45,3 +45,17 @@ def get_current_user(
     if user.status != UserStatus.ACTIVE.value:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tài khoản đã bị khóa")
     return user
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Xác thực người dùng có vai trò Quản trị viên (ADMIN)."""
+    if current_user.role != UserRole.ADMIN.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ Quản trị viên (ADMIN) mới có quyền truy cập chức năng này",
+        )
+    return current_user
+
+
+get_current_admin = require_admin
+

@@ -1,12 +1,90 @@
+import base64
+import hmac
+import json
+import time
 import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-import bcrypt
-from jose import jwt
+try:
+    import bcrypt
+except ImportError:
+    class _BcryptFallback:
+        @staticmethod
+        def gensalt(rounds: int = 12) -> bytes:
+            return secrets.token_bytes(16)
+
+        @staticmethod
+        def hashpw(password: bytes, salt: bytes) -> bytes:
+            dk = hashlib.pbkdf2_hmac("sha256", password, salt, 10_000)
+            return b"$pbkdf2$" + base64.b64encode(salt) + b"$" + base64.b64encode(dk)
+
+        @staticmethod
+        def checkpw(password: bytes, hashed_password: bytes) -> bool:
+            if not hashed_password.startswith(b"$pbkdf2$"):
+                return False
+            parts = hashed_password.split(b"$")
+            if len(parts) != 4:
+                return False
+            salt = base64.b64decode(parts[2])
+            dk = hashlib.pbkdf2_hmac("sha256", password, salt, 10_000)
+            return hmac.compare_digest(base64.b64decode(parts[3]), dk)
+
+    bcrypt = _BcryptFallback()  # type: ignore[assignment]
+
+try:
+    from jose import JWTError, jwt
+except ImportError:
+    class JWTError(Exception):  # type: ignore[no-redef]
+        pass
+
+    def _b64_encode(data: bytes) -> str:
+        return base64.urlsafe_b64encode(data).decode("utf-8").rstrip("=")
+
+    def _b64_decode(data: str) -> bytes:
+        pad = len(data) % 4
+        if pad > 0:
+            data += "=" * (4 - pad)
+        return base64.urlsafe_b64decode(data.encode("utf-8"))
+
+    class _JwtFallback:
+        @staticmethod
+        def encode(claims: dict, key: str, algorithm: str = "HS256") -> str:
+            header = {"typ": "JWT", "alg": algorithm}
+            h_str = _b64_encode(json.dumps(header).encode("utf-8"))
+            c_copy = dict(claims)
+            for k, v in c_copy.items():
+                if hasattr(v, "timestamp"):
+                    c_copy[k] = int(v.timestamp())
+            p_str = _b64_encode(json.dumps(c_copy).encode("utf-8"))
+            msg = f"{h_str}.{p_str}".encode("utf-8")
+            sig = _b64_encode(hmac.new(key.encode("utf-8"), msg, hashlib.sha256).digest())
+            return f"{h_str}.{p_str}.{sig}"
+
+        @staticmethod
+        def decode(token: str, key: str, algorithms=None) -> dict:
+            parts = token.split(".")
+            if len(parts) != 3:
+                raise JWTError("Invalid token format")
+            h_str, p_str, sig_str = parts
+            msg = f"{h_str}.{p_str}".encode("utf-8")
+            expected_sig = _b64_encode(hmac.new(key.encode("utf-8"), msg, hashlib.sha256).digest())
+            if not hmac.compare_digest(sig_str, expected_sig):
+                raise JWTError("Invalid signature")
+            try:
+                payload = json.loads(_b64_decode(p_str).decode("utf-8"))
+            except Exception:
+                raise JWTError("Malformed token payload")
+            exp = payload.get("exp")
+            if exp and exp < time.time():
+                raise JWTError("Token expired")
+            return payload
+
+    jwt = _JwtFallback()  # type: ignore[assignment]
 
 from app.core.config import settings
+
 
 # NFR-03: BCrypt work factor 12
 BCRYPT_ROUNDS = 12

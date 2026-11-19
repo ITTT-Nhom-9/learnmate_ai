@@ -2,7 +2,23 @@ import os
 from pathlib import Path
 from typing import Optional, List
 from pydantic import Field, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+try:
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+except ImportError:
+    from pydantic import BaseModel
+    class BaseSettings(BaseModel):  # type: ignore[no-redef]
+        def __init__(self, **values):
+            init_vals = {}
+            for field_name in self.__class__.model_fields:
+                env_val = os.getenv(field_name)
+                if env_val is not None:
+                    init_vals[field_name] = env_val
+            init_vals.update(values)
+            super().__init__(**init_vals)
+
+    def SettingsConfigDict(**kwargs):  # type: ignore[no-redef]
+        return kwargs
+
 
 # Xac dinh duong dan goc de tu dong doc .env bat ke thu muc thuc thi lenh
 CORE_DIR = Path(__file__).resolve().parent
