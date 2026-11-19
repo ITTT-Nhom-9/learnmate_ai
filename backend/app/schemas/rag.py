@@ -61,3 +61,35 @@ class DocumentDetailResponse(BaseModel):
     total_chunks: int
     created_at: datetime
     chunks: List[DocumentChunkOut] = Field(default_factory=list)
+
+
+class SourceCitation(BaseModel):
+    """Thông tin trích dẫn nguồn số trang của đoạn văn bản tham chiếu (FR-RG-03)."""
+    model_config = ConfigDict(from_attributes=True)
+
+    chunk_id: int = Field(..., description="Mã đoạn chunk trong CSDL")
+    document_id: int = Field(..., description="Mã tài liệu giáo trình")
+    file_name: str = Field(..., description="Tên tệp giáo trình PDF")
+    page_number: int = Field(..., description="Số trang gốc trong tệp PDF để trích dẫn")
+    similarity_score: float = Field(..., description="Điểm tương đồng Cosine Similarity (0.0 .. 1.0)")
+    snippet: str = Field(..., description="Đoạn trích dẫn nội dung văn bản ngắn")
+
+
+class RAGQueryRequest(BaseModel):
+    """Dữ liệu yêu cầu hỏi đáp theo giáo trình PDF (POST /api/v1/rag/query)."""
+    course_id: int = Field(..., description="Mã môn học cần tra cứu")
+    query: str = Field(..., min_length=2, max_length=1000, description="Câu hỏi của sinh viên")
+    document_ids: Optional[List[int]] = Field(
+        default=None,
+        description="Danh sách ID tài liệu cần giới hạn phạm vi (nếu bỏ trống sẽ tìm trên toàn bộ tài liệu môn học)",
+    )
+    top_k: int = Field(default=3, ge=1, le=10, description="Số đoạn văn bản tương đồng nhất cần truy xuất (mặc định 3 theo SDD)")
+
+
+class RAGQueryResponse(BaseModel):
+    """Kết quả trả lời câu hỏi dựa trên PDF kèm số trang trích dẫn (FR-RG-03, FR-RG-05)."""
+    query: str = Field(..., description="Câu hỏi gốc của sinh viên")
+    answer: str = Field(..., description="Nội dung giải đáp của AI kèm trích dẫn số trang rõ ràng")
+    is_out_of_scope: bool = Field(default=False, description="Đánh dấu câu hỏi ngoài phạm vi tài liệu (FR-RG-05)")
+    citations: List[SourceCitation] = Field(default_factory=list, description="Danh sách các trích dẫn số trang bài giảng")
+    total_sources: int = Field(default=0, description="Tổng số nguồn trích dẫn được sử dụng")

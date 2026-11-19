@@ -26,7 +26,11 @@ from app.schemas.rag import (
     DocumentListResponse,
     DocumentDetailResponse,
     DocumentChunkOut,
+    SourceCitation,
+    RAGQueryRequest,
+    RAGQueryResponse,
 )
+from app.services.ai_rag_client import AIRAGClient, get_ai_rag_client
 
 # Giới hạn kích thước tệp theo BR-09: 20MB
 MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20,971,520 bytes
@@ -55,25 +59,13 @@ def generate_deterministic_embedding(text: str, dim: int = EMBEDDING_DIM) -> Lis
         vec[0] = 1.0
         return vec
 
-    # Phân tích từ và tạo phổ tần số băm (Feature Hashing)
+    # Phân tích từ và tạo phổ tần số băm (Term Frequency Feature Hashing)
     words = text.lower().split()
     weights = [0.0] * dim
 
-    for i, word in enumerate(words):
-        # Băm word + vị trí ngữ cảnh
+    for word in words:
         h = int(hashlib.sha256(word.encode("utf-8")).hexdigest(), 16)
-        idx = h % dim
-        # Thêm trọng số dấu luân phiên để tránh tích lũy thiên lệch
-        sign = 1.0 if (h >> 16) & 1 else -1.0
-        weights[idx] += sign * (1.0 / math.sqrt(i + 1))
-
-        # Bigram hashing để nắm bắt ngữ cảnh liền kề
-        if i > 0:
-            bi = f"{words[i-1]}_{word}"
-            h_bi = int(hashlib.sha256(bi.encode("utf-8")).hexdigest(), 16)
-            idx_bi = h_bi % dim
-            sign_bi = 1.0 if (h_bi >> 16) & 1 else -1.0
-            weights[idx_bi] += 0.5 * sign_bi
+        weights[h % dim] += 1.0
 
     # Chuẩn hóa L2 để vector nằm trên mặt cầu đơn vị (Cosine Similarity = Dot Product)
     norm = math.sqrt(sum(w * w for w in weights))
@@ -447,3 +439,168 @@ class RAGService:
         self.db.delete(doc)
         self.db.commit()
         return True
+
+    @staticmethod
+    def compute_cosine_similarity(vec_a: List[float], vec_b: List[float]) -> float:
+        """Tính Cosine Similarity giữa 2 vector embedding đã chuẩn hóa L2.
+        
+        Vì ||a|| = 1.0 và ||b|| = 1.0, cos(a, b) = a . b (Dot Product).
+        """
+        if not vec_a or not vec_b or len(vec_a) != len(vec_b):
+            return 0.0
+        dot_product = sum(a * b for a, b in zip(vec_a, vec_b))
+        # Giới hạn an toàn trong khoảng [-1.0, 1.0]
+        return max(-1.0, min(1.0, float(dot_product)))
+
+    def retrieve_top_k_chunks(
+        self,
+        course_id: int,
+        query: str,
+        document_ids: Optional[List[int]] = None,
+        top_k: int = 3,
+    ) -> List[Tuple[DocumentChunk, Document, float]]:
+        """Tìm kiếm các đoạn văn bản tương đồng ngữ nghĩa nhất (Top K Cosine Similarity).
+        
+        Trả về danh sách tuple: [(DocumentChunk, Document, similarity_score), ...]
+        sắp xếp giảm dần theo điểm tương đồng.
+        """
+        query_embedding = generate_deterministic_embedding(query, dim=EMBEDDING_DIM)
+
+        db_query = (
+            self.db.query(DocumentChunk, Document)
+            .join(Document, DocumentChunk.document_id == Document.id)
+            .filter(Document.course_id == course_id)
+        )
+
+        if document_ids:
+            db_query = db_query.filter(Document.id.in_(document_ids))
+
+        rows = db_query.all()
+        if not rows:
+            return []
+
+        scored_chunks = []
+        for chunk, doc in rows:
+            chunk_emb = chunk.embedding
+            if isinstance(chunk_emb, list) and len(chunk_emb) == EMBEDDING_DIM:
+                sim = self.compute_cosine_similarity(query_embedding, chunk_emb)
+                scored_chunks.append((chunk, doc, sim))
+
+        # Sắp xếp giảm dần theo độ tương đồng Cosine Similarity
+        scored_chunks.sort(key=lambda x: x[2], reverse=True)
+        return scored_chunks[:top_k]
+
+    async def query_and_answer(
+        self,
+        current_user: User,
+        request: RAGQueryRequest,
+        ai_client: Optional[AIRAGClient] = None,
+    ) -> RAGQueryResponse:
+        """Hỏi đáp tài liệu PDF có trích dẫn số trang và kiểm tra ngoài phạm vi (TK-25 / FR-RG-03, FR-RG-05)."""
+        # 1. Kiểm tra môn học tồn tại
+        course = self.db.query(Course).filter(Course.id == request.course_id).first()
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy môn học có ID {request.course_id}.",
+            )
+
+        # 2. Kiểm tra quyền truy cập (sinh viên phải ghi danh)
+        if current_user.role != "ADMIN":
+            enrollment = (
+                self.db.query(Enrollment)
+                .filter(
+                    Enrollment.user_id == current_user.id,
+                    Enrollment.course_id == request.course_id,
+                )
+                .first()
+            )
+            if not enrollment:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Bạn chưa ghi danh môn học này nên không thể sử dụng tính năng hỏi đáp tài liệu.",
+                )
+
+        start_time = time.time()
+
+        # 3. Truy xuất Top K đoạn tương đồng ngữ nghĩa nhất (Cosine Similarity)
+        top_chunks = self.retrieve_top_k_chunks(
+            course_id=request.course_id,
+            query=request.query,
+            document_ids=request.document_ids,
+            top_k=request.top_k,
+        )
+
+        # Ngưỡng nhận diện ngoài phạm vi (FR-RG-05): 0.20
+        RELEVANCE_THRESHOLD = 0.20
+
+        # 4. Kiểm tra câu hỏi ngoài phạm vi (FR-RG-05)
+        if not top_chunks or top_chunks[0][2] < RELEVANCE_THRESHOLD:
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            return RAGQueryResponse(
+                query=request.query,
+                answer=(
+                    "Nội dung câu hỏi của bạn nằm ngoài phạm vi tài liệu giáo trình được cung cấp. "
+                    "Vui lòng đặt câu hỏi liên quan đến nội dung bài giảng để được giải đáp chính xác kèm trích dẫn số trang."
+                ),
+                is_out_of_scope=True,
+                citations=[],
+                total_sources=0,
+            )
+
+        # 5. Xây dựng danh sách trích dẫn nguồn (Source Citations)
+        citations: List[SourceCitation] = []
+        payload_context = []
+        for chunk, doc, sim in top_chunks:
+            snippet = chunk.content[:150] + "..." if len(chunk.content) > 150 else chunk.content
+            citations.append(
+                SourceCitation(
+                    chunk_id=chunk.id,
+                    document_id=doc.id,
+                    file_name=doc.file_name,
+                    page_number=chunk.page_number,
+                    similarity_score=round(sim, 4),
+                    snippet=snippet,
+                )
+            )
+            payload_context.append({
+                "chunk_id": chunk.id,
+                "document_id": doc.id,
+                "file_name": doc.file_name,
+                "page_number": chunk.page_number,
+                "content": chunk.content,
+                "similarity": sim,
+            })
+
+        # 6. Gửi sang AI Microservice (hoặc fallback) để tổng hợp câu trả lời kèm trích dẫn
+        client = ai_client or get_ai_rag_client()
+        payload = {
+            "query": request.query,
+            "context_chunks": payload_context,
+        }
+        ai_resp = await client.query(payload)
+
+        # 7. Ghi log yêu cầu AI (ai_request_logs)
+        elapsed_ms = int((time.time() - start_time) * 1000)
+        tokens_prompt = ai_resp.get("tokens_prompt", len(request.query.split()))
+        tokens_completion = ai_resp.get("tokens_completion", 0)
+
+        ai_log = AIRequestLog(
+            user_id=current_user.id,
+            feature="RAG",
+            provider="openai",
+            tokens_prompt=tokens_prompt,
+            tokens_completion=tokens_completion,
+            latency_ms=max(1, elapsed_ms),
+            created_at=datetime.now(timezone.utc),
+        )
+        self.db.add(ai_log)
+        self.db.commit()
+
+        return RAGQueryResponse(
+            query=request.query,
+            answer=ai_resp.get("answer", ""),
+            is_out_of_scope=ai_resp.get("is_out_of_scope", False),
+            citations=citations,
+            total_sources=len(citations),
+        )
