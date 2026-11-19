@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Tuple
 from fastapi import APIRouter, Depends
 
-from app.adapters import LLMMessage, get_llm_adapter
+from app.adapters import LLMMessage, LLMProvider, get_llm_adapter
 from app.core.security import verify_internal_api_key
 from app.schemas.rag_schema import (
     RAGQueryRequestDTO,
@@ -69,12 +69,20 @@ def _prepare_rag_prompt(request: RAGQueryRequestDTO) -> Tuple[str, List[LLMMessa
     return system_prompt, messages
 
 
+def get_rag_llm_adapter() -> LLMProvider:
+    """Dependency cung cấp LLM Adapter cho phân hệ RAG (hỗ trợ DI khi viết Unit Test)."""
+    return get_llm_adapter()
+
+
 @router.post(
     "/query",
     response_model=RAGQueryResponseDTO,
     summary="Hỏi đáp theo tài liệu PDF kèm trích dẫn số trang (TK-25 / FR-RG-03)",
 )
-async def query_rag_document(request: RAGQueryRequestDTO) -> RAGQueryResponseDTO:
+async def query_rag_document(
+    request: RAGQueryRequestDTO,
+    adapter: LLMProvider = Depends(get_rag_llm_adapter),
+) -> RAGQueryResponseDTO:
     """Xử lý câu hỏi của sinh viên dựa trên các đoạn chunk tài liệu giáo trình."""
     start_time = time.time()
 
@@ -110,7 +118,6 @@ async def query_rag_document(request: RAGQueryRequestDTO) -> RAGQueryResponseDTO
         )
 
     system_prompt, messages = _prepare_rag_prompt(request)
-    adapter = get_llm_adapter()
 
     llm_resp = await adapter.chat(
         messages=messages,
