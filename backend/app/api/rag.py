@@ -18,7 +18,10 @@ from app.schemas.rag import (
     DocumentUploadResponse,
     DocumentListResponse,
     DocumentDetailResponse,
+    RAGQueryRequest,
+    RAGQueryResponse,
 )
+from app.services.ai_rag_client import AIRAGClient, get_ai_rag_client
 from app.services.rag_service import RAGService
 
 router = APIRouter(tags=["RAG"])
@@ -90,3 +93,22 @@ def delete_document(
         "status": "success",
         "message": f"Đã xóa tài liệu có ID {document_id} và toàn bộ vector embedding liên quan thành công.",
     }
+
+
+@router.post(
+    "/query",
+    response_model=RAGQueryResponse,
+    summary="Hỏi đáp theo tài liệu giáo trình PDF có trích dẫn số trang bài giảng (TK-25 / FR-RG-03, FR-RG-05)",
+)
+async def query_rag(
+    request: RAGQueryRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    ai_client: AIRAGClient = Depends(get_ai_rag_client),
+):
+    """Tìm kiếm các đoạn văn bản tương đồng ngữ nghĩa nhất (Cosine Similarity),
+    gửi vào ngữ cảnh để AI trả lời có ghi rõ trích dẫn số trang bài giảng (FR-RG-03).
+    Tự động từ chối nếu câu hỏi nằm ngoài phạm vi tài liệu (FR-RG-05).
+    """
+    service = RAGService(db)
+    return await service.query_and_answer(current_user, request, ai_client=ai_client)
