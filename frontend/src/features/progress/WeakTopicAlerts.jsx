@@ -1,69 +1,73 @@
-import { AlertTriangle, BookOpen, RotateCcw } from 'lucide-react';
-import clsx from 'clsx';
-
-const ACTION_LABELS = {
-  REVIEW_THEORY: 'Ôn lý thuyết',
-  RETAKE_QUIZ: 'Làm lại bài',
-  ASK_TUTOR: 'Hỏi gia sư AI',
-};
+import { AlertTriangle, RotateCcw, Target } from 'lucide-react';
 
 /**
- * Danh sách cảnh báo đỏ: chủ đề yếu (Mastery < 60%) cần cải thiện gấp (SCR-07, BR-08).
- * Mỗi thẻ hiển thị: tên chủ đề, bài học, điểm Mastery, lần luyện cuối, hành động gợi ý.
+ * Khối "Chủ đề cần củng cố" – Cảnh báo chủ đề yếu (Mastery < 60%) + Mục tiêu tiếp theo.
+ *
+ * Chuẩn bản vẽ SCR-07_Bang_Tien_Do_Ca_Nhan.png:
+ *  - Hộp cảnh báo (Alert Box) nền hồng nhạt: Tên chủ đề in đậm (trái), điểm EMA đỏ (phải).
+ *  - Lời giải thích + Nút "Ôn tập ngay" nổi bật.
+ *  - Mục tiêu tiếp theo: Đoạn gợi ý hành động.
  */
 export default function WeakTopicAlerts({ weakTopics = [] }) {
   if (weakTopics.length === 0) {
     return (
       <div className="flex flex-col items-center rounded-xl border border-dashed border-green-300 bg-green-50/50 py-8 text-center">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-500">
-          <BookOpen size={20} />
+          <Target size={20} />
         </span>
         <p className="mt-3 text-sm font-medium text-green-700">Không có chủ đề yếu!</p>
-        <p className="mt-1 text-xs text-green-600">Tất cả chủ đề đã luyện tập đều đạt mức Khá hoặc Giỏi.</p>
+        <p className="mt-1 text-xs text-green-600">
+          Tất cả chủ đề đã luyện tập đều đạt mức Khá hoặc Giỏi.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {weakTopics.map((topic) => (
         <div
           key={topic.topic_id}
-          className="rounded-xl border border-red-200 bg-red-50/60 p-4 transition-shadow hover:shadow-md"
+          className="rounded-xl border border-red-200 bg-red-50/60 p-5"
         >
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-500">
-              <AlertTriangle size={16} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h4 className="text-sm font-semibold text-red-800 line-clamp-2">{topic.topic_name}</h4>
-              <p className="mt-0.5 truncate text-xs text-red-600/80">{topic.lesson_title}</p>
-
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-red-700/70">
-                <span className="font-semibold text-red-700">
-                  Mastery: {Math.round(topic.mastery_score)}%
-                </span>
-                {topic.last_quiz_score != null && (
-                  <span>Điểm gần nhất: {topic.last_quiz_score}/10</span>
-                )}
-                <span>Đã luyện {topic.attempt_count} lần</span>
-              </div>
-
-              <div className="mt-2.5">
-                <span
-                  className={clsx(
-                    'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
-                    'bg-red-100 text-red-700'
-                  )}
-                >
-                  <RotateCcw size={12} />
-                  {ACTION_LABELS[topic.recommended_action] || 'Ôn tập'}
-                </span>
-              </div>
+          {/* Hàng trên: Tên chủ đề + Điểm EMA */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2 min-w-0">
+              <AlertTriangle size={18} className="mt-0.5 shrink-0 text-red-500" />
+              <h3 className="font-bold text-red-700 line-clamp-2">{topic.topic_name}</h3>
             </div>
+            <span className="shrink-0 text-sm font-bold text-red-600">
+              EMA {Math.round(topic.mastery_score)}%
+            </span>
           </div>
+
+          {/* Mô tả cảnh báo */}
+          <p className="mt-2.5 text-sm leading-relaxed text-red-700/80">
+            Dưới ngưỡng 60%. Bạn nên ôn lại lý thuyết và làm bài tập củng cố trước khi sang bài
+            tiếp theo.
+          </p>
+
+          {/* Nút hành động */}
+          <button
+            type="button"
+            className="mt-4 flex items-center gap-2 rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-navy-900"
+          >
+            <RotateCcw size={14} />
+            Ôn tập ngay
+          </button>
         </div>
       ))}
+
+      {/* MỤC TIÊU TIẾP THEO */}
+      <div className="mt-5 border-t border-slate-100 pt-4">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          Mục tiêu tiếp theo
+        </h4>
+        <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+          Nâng điểm thành thạo các chủ đề chưa đạt chuẩn lên mức Khá (≥&nbsp;60%). Hoàn thành các
+          bài luyện tập thích ứng được hệ thống đề xuất.
+        </p>
+      </div>
     </div>
   );
 }

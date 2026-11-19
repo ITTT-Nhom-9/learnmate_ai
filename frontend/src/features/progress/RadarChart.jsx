@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Chart, registerables } from 'chart.js';
+import clsx from 'clsx';
 
 // Đăng ký tất cả controller / scale / plugin của Chart.js (gồm RadarController, RadialLinearScale, …).
 Chart.register(...registerables);
@@ -7,12 +8,14 @@ Chart.register(...registerables);
 /**
  * Biểu đồ Radar năng lực chủ đề (SCR-07).
  *
+ * Chuẩn bản vẽ SCR-07_Bang_Tien_Do_Ca_Nhan.png:
+ *  - Bố cục 2 cột bên trong Card: Trái = Canvas Radar (~55%), Phải = Danh sách điểm % (~45%).
+ *  - Tiêu đề card & nhãn phụ được render ở component cha (ProgressDashboardPage).
+ *
  * Props:
  * - labels: string[]  — tên các chủ đề (tối đa 6-12 trục)
  * - scores: number[]  — điểm Mastery (0-100) tương ứng
  * - axes:   object[]  — chi tiết từng trục (status, label_vi) để tô màu điểm
- *
- * Thư viện: Chart.js v4 (đã có trong package.json sau cài đặt TK-22).
  */
 export default function RadarChart({ labels = [], scores = [], axes = [], className = '' }) {
   const canvasRef = useRef(null);
@@ -24,7 +27,6 @@ export default function RadarChart({ labels = [], scores = [], axes = [], classN
     // Rút gọn nhãn dài: "Hệ quản trị CSDL (DBMS) và Hệ thống Tập tin truyền thống" → "Hệ quản trị CSDL…"
     const shortLabels = labels.map((label) => {
       if (label.length <= 20) return label;
-      // Cắt tại khoảng trắng gần vị trí 18 ký tự
       const cut = label.lastIndexOf(' ', 18);
       return label.slice(0, cut > 8 ? cut : 18) + '…';
     });
@@ -48,8 +50,8 @@ export default function RadarChart({ labels = [], scores = [], axes = [], classN
             label: 'Mastery (%)',
             data: scores,
             fill: true,
-            backgroundColor: 'rgba(99, 102, 241, 0.15)',   // brand-500 / 15%
-            borderColor: '#6366f1',                          // brand-500
+            backgroundColor: 'rgba(99, 102, 241, 0.15)',
+            borderColor: '#6366f1',
             borderWidth: 2,
             pointBackgroundColor: pointColors.length === scores.length ? pointColors : '#6366f1',
             pointBorderColor: '#fff',
@@ -112,8 +114,37 @@ export default function RadarChart({ labels = [], scores = [], axes = [], classN
   }
 
   return (
-    <div className={className}>
-      <canvas ref={canvasRef} aria-label="Biểu đồ Radar năng lực chủ đề" role="img" />
+    <div className={clsx('grid grid-cols-1 gap-4 md:grid-cols-[55%_45%] md:items-center', className)}>
+      {/* Cột trái: Canvas Radar */}
+      <div className="mx-auto w-full max-w-sm">
+        <canvas ref={canvasRef} aria-label="Biểu đồ Radar năng lực chủ đề" role="img" />
+      </div>
+
+      {/* Cột phải: Danh sách điểm % chi tiết từng chủ đề */}
+      <div className="flex flex-col justify-center space-y-3 pl-0 md:pl-4">
+        {axes.map((axis, idx) => (
+          <div
+            key={axis.topic_id || idx}
+            className="flex items-center justify-between text-sm"
+          >
+            <span className="truncate pr-2 text-slate-700">{axis.topic_name}</span>
+            <span
+              className={clsx(
+                'shrink-0 font-semibold',
+                scores[idx] >= 80
+                  ? 'text-emerald-600'
+                  : scores[idx] >= 60
+                    ? 'text-blue-600'
+                    : scores[idx] > 0
+                      ? 'text-amber-600'
+                      : 'text-red-500'
+              )}
+            >
+              {Math.round(scores[idx])}%
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
