@@ -57,6 +57,8 @@ class RecentAttempt(BaseModel):
     difficulty: str
     score: float  # Thang 10
     duration_sec: int
+    created_at: datetime | None = None
+    last_practiced_at: datetime | None = None
 
 
 class ProgressSummaryResponse(BaseModel):

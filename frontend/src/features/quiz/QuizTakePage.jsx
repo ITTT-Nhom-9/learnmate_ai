@@ -46,7 +46,7 @@ export default function QuizTakePage() {
   const { topicId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const lessonId = searchParams.get('lesson');
+  const lessonId = searchParams.get('lesson') || searchParams.get('lessonId');
   const requestedDifficulty = (searchParams.get('difficulty') || '').toUpperCase();
   const difficulty = DIFFICULTY_LABELS[requestedDifficulty] ? requestedDifficulty : 'MEDIUM';
 

@@ -129,6 +129,11 @@ def submit_quiz_by_id_endpoint(
     response_model=QuizSubmitResponse,
     summary="Lấy chi tiết kết quả làm bài trắc nghiệm (SCR-06)",
 )
+@alias_router.get(
+    "/attempts/{attempt_id}",
+    response_model=QuizSubmitResponse,
+    include_in_schema=False,
+)
 def get_attempt_endpoint(
     attempt_id: int,
     current_user: User = Depends(get_current_user),

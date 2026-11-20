@@ -20,7 +20,14 @@ from app.models.quiz import (
     QuizAttemptStatus,
 )
 from app.models.user import User
-from app.schemas.quiz import AnswerResultOut, QuizSubmitRequest, QuizSubmitResponse
+from app.schemas.quiz import (
+    AnswerResultOut,
+    QuestionPublicOut,
+    QuizOptionPublicOut,
+    QuizPublicResponse,
+    QuizSubmitRequest,
+    QuizSubmitResponse,
+)
 
 MAX_SCORE = Decimal("10")
 
@@ -162,6 +169,7 @@ class QuizSubmissionService:
             select(QuizAttempt)
             .options(
                 selectinload(QuizAttempt.quiz).selectinload(Quiz.questions).selectinload(Question.options),
+                selectinload(QuizAttempt.quiz).selectinload(Quiz.topic),
                 selectinload(QuizAttempt.answers),
             )
             .where(QuizAttempt.id == attempt_id, QuizAttempt.user_id == user.id)
@@ -200,6 +208,25 @@ class QuizSubmissionService:
             )
 
         total = len(quiz.questions)
+        quiz_public = QuizPublicResponse(
+            id=quiz.id,
+            topic_id=quiz.topic_id,
+            title=quiz.title,
+            difficulty=quiz.difficulty,
+            total_questions=total,
+            questions=[
+                QuestionPublicOut(
+                    id=q.id,
+                    content=q.content,
+                    options=[
+                        QuizOptionPublicOut(id=opt.id, opt_label=opt.opt_label, content=opt.content)
+                        for opt in q.options
+                    ],
+                )
+                for q in quiz.questions
+            ],
+        )
+
         return QuizSubmitResponse(
             attempt_id=attempt.id,
             quiz_id=quiz.id,
@@ -211,4 +238,7 @@ class QuizSubmissionService:
             duration_sec=attempt.duration_sec,
             status=attempt.status,
             answers=results,
+            quiz=quiz_public,
+            topic_id=quiz.topic_id,
+            lesson_id=quiz.topic.lesson_id if quiz.topic else None,
         )

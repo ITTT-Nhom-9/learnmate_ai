@@ -229,14 +229,14 @@ def test_mastery_service_update_after_quiz_and_weak_recommendation(
 
     service = MasteryService(db_session)
 
-    # Sinh viên làm bài đạt 5/10 (50%) -> EMA = 0.0 * 0.7 + 50.0 * 0.3 = 15.0%
+    # Sinh viên làm bài đạt 5/10 (50%) -> Lần đầu khởi tạo Cold-Start: 50.0% (vẫn WEAK < 60%)
     mastery = service.update_mastery_after_quiz(
         user_id=user.id,
         topic_id=topic1.id,
         quiz_score=5.0,
         duration_sec=120,
     )
-    assert float(mastery.mastery_score) == 15.0
+    assert float(mastery.mastery_score) == 50.0
     assert mastery.status == MasteryStatus.WEAK.value
 
     # Kiểm tra kích hoạt nhiệm vụ khuyến nghị ôn tập BR-08
@@ -257,7 +257,7 @@ def test_mastery_service_update_after_quiz_and_weak_recommendation(
         ).all()
     )
     assert len(events) == 1
-    assert events[0].event_data["new_mastery"] == 15.0
+    assert events[0].event_data["new_mastery"] == 50.0
     assert events[0].event_data["status"] == "WEAK"
     assert events[0].event_data["label_vi"] == "Yếu"
 
@@ -315,15 +315,15 @@ def test_mastery_service_calculate_course_progress(
     # Ban đầu chưa học chủ đề nào -> tiến độ 0.0%
     assert service.calculate_course_progress(user.id, course.id) == 0.0
 
-    # Học topic1 đạt 80% (Mastery = 24.0% sau lượt 1)
+    # Học topic1 đạt 80% (Cold-Start = 80.0% sau lượt 1)
     service.update_mastery_after_quiz(user.id, topic1.id, quiz_score=8.0)
-    # Trung bình: (24.0 + 0.0) / 2 = 12.0%
-    assert service.calculate_course_progress(user.id, course.id) == 12.0
+    # Trung bình: (80.0 + 0.0) / 2 = 40.0%
+    assert service.calculate_course_progress(user.id, course.id) == 40.0
 
-    # Học topic2 đạt 100% (Mastery = 30.0% sau lượt 1)
+    # Học topic2 đạt 100% (Cold-Start = 100.0% sau lượt 1)
     service.update_mastery_after_quiz(user.id, topic2.id, quiz_score=10.0)
-    # Trung bình: (24.0 + 30.0) / 2 = 27.0%
-    assert service.calculate_course_progress(user.id, course.id) == 27.0
+    # Trung bình: (80.0 + 100.0) / 2 = 90.0%
+    assert service.calculate_course_progress(user.id, course.id) == 90.0
 
 
 def test_mastery_service_adaptive_difficulty_query(
@@ -391,7 +391,7 @@ def test_quiz_submission_triggers_mastery_update(
     assert response.score == 10.0
     assert response.correct_count == 2
 
-    # Kiểm tra tự động cập nhật TopicMastery: 0.0 * 0.7 + 100.0 * 0.3 = 30.0%
+    # Kiểm tra tự động cập nhật TopicMastery: Lần đầu Cold-Start đạt 100.0%
     mastery = db_session.scalar(
         select(TopicMastery).where(
             TopicMastery.user_id == user.id,
@@ -399,8 +399,8 @@ def test_quiz_submission_triggers_mastery_update(
         )
     )
     assert mastery is not None
-    assert float(mastery.mastery_score) == 30.0
-    assert mastery.status == MasteryStatus.WEAK.value  # 30% vẫn < 60%
+    assert float(mastery.mastery_score) == 100.0
+    assert mastery.status == MasteryStatus.MASTER.value
 
 
 def test_mastery_service_edge_cases_and_model_aliases(

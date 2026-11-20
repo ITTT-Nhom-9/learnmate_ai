@@ -6,7 +6,6 @@ import RegisterPage from '../features/auth/RegisterPage';
 import CourseCatalogPage from '../features/courses/CourseCatalogPage';
 import Spinner from '../components/common/Spinner';
 import NotFoundPage from '../pages/NotFoundPage';
-import PlaceholderPage from '../pages/PlaceholderPage';
 import ProtectedRoute, { GuestRoute } from './ProtectedRoute';
 
 // Trang chi tiết môn kéo theo thư viện Markdown/KaTeX/Prism (nặng) -> chỉ tải khi người dùng mở môn học
@@ -14,6 +13,7 @@ const CourseDetailPage = lazy(() => import('../features/courses/CourseDetailPage
 const TutorChatPage = lazy(() => import('../features/tutor/TutorChatPage'));
 const QuizTakePage = lazy(() => import('../features/quiz/QuizTakePage')); // SCR-05
 const QuizResultPage = lazy(() => import('../features/quiz/QuizResultPage')); // SCR-06
+const ProgressDashboardPage = lazy(() => import('../features/progress/ProgressDashboardPage')); // SCR-07
 
 const pageFallback = (
   <div className="flex justify-center py-24 text-slate-400">
@@ -76,7 +76,11 @@ export default function AppRoutes() {
               </Suspense>
             }
           />
-          <Route path="/progress" element={<PlaceholderPage title="Bảng tiến độ" />} />
+          <Route path="/progress" element={
+            <Suspense fallback={pageFallback}>
+              <ProgressDashboardPage />
+            </Suspense>
+          } />
         </Route>
       </Route>
 

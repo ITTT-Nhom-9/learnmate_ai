@@ -281,11 +281,11 @@ def test_summary_reflects_real_quiz_flow(client, db_factory, seeded):
     body = client.get(
         f"{API}/summary?course_id={seeded['course']}", headers=auth(seeded["u1"])
     ).json()
-    # EMA: 0 * 0.7 + 50 * 0.3 = 15% -> WEAK, kèm khuyến nghị REVIEW_THEORY do BR-08 tạo
+    # Cold-Start lượt 1: 50% -> WEAK (< 60%), kèm khuyến nghị REVIEW_THEORY do BR-08 tạo
     assert [w["topic_id"] for w in body["weak_topics"]] == [t1]
-    assert body["weak_topics"][0]["mastery_score"] == 15.0
+    assert body["weak_topics"][0]["mastery_score"] == 50.0
     assert body["weak_topics"][0]["recommended_action"] == "REVIEW_THEORY"
-    assert body["overall_progress_pct"] == round(15.0 / 7, 2)
+    assert body["overall_progress_pct"] == round(50.0 / 7, 2)
 
 
 # ==============================================================================

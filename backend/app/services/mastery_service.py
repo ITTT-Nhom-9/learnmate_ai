@@ -30,7 +30,7 @@ from app.models.mastery import (
     TopicMastery,
     UserTopicMastery,
 )
-from app.models.quiz import QuizDifficulty
+from app.models.quiz import Quiz, QuizAttempt, QuizDifficulty
 from app.services.recommendation_service import RecommendationService
 
 logger = logging.getLogger(__name__)
@@ -200,8 +200,15 @@ class MasteryService:
         # 2. Chuẩn hóa điểm quiz
         normalized_quiz_score = MasteryEngine.normalize_score_to_percent(quiz_score)
 
-        # 3. Tính điểm mới bằng EMA
-        new_score = MasteryEngine.calculate_ema(current_score, normalized_quiz_score, self.alpha)
+        # 3. Tính điểm mới bằng EMA (xử lý Cold-Start giải thuật)
+        # Khi sinh viên làm bài trắc nghiệm của một chủ đề lần đầu tiên (current_score == 0.0):
+        # Điểm Mastery ban đầu được thiết lập bằng chính kết quả bài thi đầu tiên.
+        # Từ các lượt làm bài tiếp theo (current_score > 0.0), áp dụng chuẩn công thức EMA:
+        # S_new = S_old * 0.7 + S_quiz * 0.3 (BR-01)
+        if current_score == 0.0:
+            new_score = normalized_quiz_score
+        else:
+            new_score = MasteryEngine.calculate_ema(current_score, normalized_quiz_score, self.alpha)
 
         # 4. Phân hạng năng lực
         new_status = MasteryEngine.classify_status(new_score)

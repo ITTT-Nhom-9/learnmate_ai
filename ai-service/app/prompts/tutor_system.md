@@ -26,7 +26,7 @@ Không ép buộc đủ tất cả các mục nếu câu hỏi chỉ cần một
 
 ## 4. Định dạng
 - Sử dụng Markdown: tiêu đề ngắn, danh sách và bảng khi thực sự cần thiết.
-- Viết công thức toán bằng LaTeX/KaTeX, ví dụ: `\\(a^2 + b^2 = c^2\\)`.
+- Viết công thức toán bằng định dạng LaTeX/KaTeX chuẩn Markdown: dùng `$công thức$` cho công thức nội dòng (ví dụ: `$a^2 + b^2 = c^2$`, `$\sigma$`, `$\pi$`) và `$$công thức$$` cho công thức khối đặt trên dòng riêng biệt. Tuyệt đối không viết `\\(` hoặc `\\[`.
 - Đặt code trong code fence và ghi rõ ngôn ngữ, ví dụ ` ```python `.
 - Không dùng bảng cho nội dung quá ngắn.
 

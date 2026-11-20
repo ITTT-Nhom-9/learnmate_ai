@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CheckCircle2, CircleDashed, ClipboardX, Clock, Lightbulb, RotateCcw, Sparkles, XCircle } from 'lucide-react';
 import clsx from 'clsx';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
+import Spinner from '../../components/common/Spinner';
 import Breadcrumb from '../../components/layout/Breadcrumb';
 import MarkdownViewer from '../../components/viewer/MarkdownViewer';
+import { quizApi } from '../../api/quizApi';
 import { loadResult } from './quizSession';
 import { formatDurationText, formatScore, getOptionReviewState, getResultLevel, normalizeScore10 } from './quizUtils';
 
@@ -111,8 +113,50 @@ const FILTERS = [
 
 export default function QuizResultPage() {
   const { attemptId } = useParams();
-  const data = useMemo(() => loadResult(attemptId), [attemptId]);
+  const localData = useMemo(() => loadResult(attemptId), [attemptId]);
+  const [data, setData] = useState(localData);
+  const [loading, setLoading] = useState(!localData);
   const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    if (localData) {
+      setData(localData);
+      setLoading(false);
+      return;
+    }
+    let isMounted = true;
+    setLoading(true);
+    quizApi
+      .getAttempt(attemptId)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res?.quiz) {
+          setData({
+            quiz: res.quiz,
+            result: res,
+            topicId: res.topic_id,
+            lessonId: res.lesson_id,
+          });
+        }
+      })
+      .catch(() => {
+        // Lỗi hoặc không tìm thấy kết quả bài làm
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [attemptId, localData]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-28">
+        <Spinner size={32} label="Đang tải kết quả bài làm" />
+      </div>
+    );
+  }
 
   if (!data) {
     return (
@@ -120,7 +164,7 @@ export default function QuizResultPage() {
         <EmptyState
           icon={ClipboardX}
           title="Không tìm thấy kết quả bài làm"
-          description="Kết quả chỉ được lưu trên trình duyệt trong phiên làm bài vừa rồi. Hãy làm một bài trắc nghiệm mới để xem kết quả."
+          description="Lượt làm bài này không tồn tại hoặc bạn chưa hoàn thành. Hãy làm một bài trắc nghiệm mới để xem kết quả."
           action={
             <Link to="/courses" className="inline-flex h-11 items-center rounded-lg bg-navy-800 px-4 text-sm font-semibold text-white hover:bg-navy-900">
               Về danh mục môn học

@@ -90,3 +90,46 @@ export async function submit({ quiz_id: quizId, duration_sec: durationSec, answe
     answers: results,
   };
 }
+
+export async function getAttempt(attemptId) {
+  await delay(300);
+  const quizId = 501;
+  const picked = BANK.slice(0, 5);
+  const questions = picked.map((item, qi) => {
+    const id = quizId * 100 + qi;
+    const options = item.options.map((content, oi) => ({ id: id * 10 + oi, opt_label: 'ABCD'[oi], content }));
+    return { id, content: item.content, options, correctOptionId: options[item.correct].id, explanation: item.explanation };
+  });
+  const results = questions.map((q, idx) => ({
+    question_id: q.id,
+    selected_option_id: idx % 2 === 0 ? q.correctOptionId : q.options[(q.correctOptionId % 4)].id,
+    selected_label: idx % 2 === 0 ? 'A' : 'B',
+    correct_option_id: q.correctOptionId,
+    correct_label: 'A',
+    is_correct: idx % 2 === 0,
+    explanation: q.explanation,
+  }));
+  const correct = results.filter((r) => r.is_correct).length;
+  return {
+    attempt_id: Number(attemptId),
+    quiz_id: quizId,
+    score: Math.round((correct / questions.length) * 10),
+    total_questions: questions.length,
+    correct_count: correct,
+    wrong_count: questions.length - correct,
+    unanswered_count: 0,
+    duration_sec: 420,
+    status: 'SUBMITTED',
+    answers: results,
+    quiz: {
+      id: quizId,
+      topic_id: 1,
+      title: 'Trắc nghiệm: DBMS & ACID',
+      difficulty: 'MEDIUM',
+      total_questions: questions.length,
+      questions: questions.map((q) => ({ id: q.id, content: q.content, options: q.options })),
+    },
+    topic_id: 1,
+    lesson_id: 1,
+  };
+}
