@@ -1,4 +1,7 @@
 services:
+  # ============================================================================
+  # 1. Cơ sở dữ liệu MySQL 8.0 (SDD Bảng 22 - Cụm CSDL 21 thực thể)
+  # ============================================================================
   mysql:
     image: mysql:8.0
     container_name: learnmate_mysql
@@ -22,6 +25,9 @@ services:
       timeout: 5s
       retries: 5
 
+  # ============================================================================
+  # 2. AI Microservice (FastAPI - Cổng 8000, SDD Bảng 22)
+  # ============================================================================
   ai-service:
     build:
       context: ./ai-service
@@ -38,7 +44,16 @@ services:
       - "${AI_SERVICE_PORT:-8000}:8000"
     networks:
       - learnmate-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/ai/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
 
+  # ============================================================================
+  # 3. Backend Core Service (FastAPI - Cổng 8080, SDD Bảng 22)
+  # ============================================================================
   backend:
     build:
       context: ./backend
@@ -52,6 +67,7 @@ services:
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-service:8000}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-LM_Internal_Key_987654}
       JWT_SECRET: ${JWT_SECRET:-YourSuperSecretKeyMin32Chars2026!}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:80,http://localhost:3000}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     networks:
@@ -60,12 +76,23 @@ services:
       mysql:
         condition: service_healthy
       ai-service:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
 
+  # ============================================================================
+  # 4. Frontend SPA (React + Vite + Nginx - Cổng 80/5173, SDD Bảng 22)
+  # ============================================================================
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/api/v1}
     container_name: learnmate_frontend
     restart: always
     ports:
@@ -74,12 +101,25 @@ services:
       - learnmate-net
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
+      interval: 20s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
 
+# ==============================================================================
+# Isolated Bridge Network (SDD Bảng 22)
+# ==============================================================================
 networks:
   learnmate-net:
+    name: learnmate-net
     driver: bridge
 
+# ==============================================================================
+# Persistent Named Volumes
+# ==============================================================================
 volumes:
   mysql_data:
+    name: learnmate_mysql_data
     driver: local
-
