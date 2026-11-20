@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, RotateCcw, Target } from 'lucide-react';
 
 /**
@@ -9,6 +10,8 @@ import { AlertTriangle, RotateCcw, Target } from 'lucide-react';
  *  - Mục tiêu tiếp theo: Đoạn gợi ý hành động.
  */
 export default function WeakTopicAlerts({ weakTopics = [] }) {
+  const navigate = useNavigate();
+
   if (weakTopics.length === 0) {
     return (
       <div className="flex flex-col items-center rounded-xl border border-dashed border-green-300 bg-green-50/50 py-8 text-center">
@@ -50,7 +53,8 @@ export default function WeakTopicAlerts({ weakTopics = [] }) {
           {/* Nút hành động */}
           <button
             type="button"
-            className="mt-4 flex items-center gap-2 rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-navy-900"
+            onClick={() => navigate(`/quiz/${topic.topic_id}`)}
+            className="mt-4 flex items-center gap-2 rounded-lg bg-navy-800 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-navy-900 cursor-pointer"
           >
             <RotateCcw size={14} />
             Ôn tập ngay

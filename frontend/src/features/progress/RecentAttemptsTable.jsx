@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import clsx from 'clsx';
 import { Clock, ExternalLink } from 'lucide-react';
 
@@ -89,13 +90,13 @@ export default function RecentAttemptsTable({ attempts = [] }) {
 
                 {/* Thao tác */}
                 <td className="px-3 py-2.5 text-center">
-                  <a
-                    href={`/quiz/result/${a.attempt_id}`}
+                  <Link
+                    to={`/quiz/${a.attempt_id}/result`}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
                   >
                     Xem chi tiết
                     <ExternalLink size={12} />
-                  </a>
+                  </Link>
                 </td>
               </tr>
             );

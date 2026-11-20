@@ -30,6 +30,7 @@ import { useProgress } from '../../hooks/useProgress';
  */
 export default function ProgressDashboardPage() {
   const [courseId, setCourseId] = useState(null);
+  const [showAllAttempts, setShowAllAttempts] = useState(false);
   const { summary, radar, loading, error, reload } = useProgress(courseId);
 
   return (
@@ -98,43 +99,46 @@ export default function ProgressDashboardPage() {
           {/* 2. 4 thẻ chỉ số nhanh */}
           <StatsCards stats={summary.stats} />
 
-          {/* 3. Mức độ thành thạo theo chủ đề (Radar + Danh sách điểm) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-base font-semibold text-navy-800">
-                <LineChart size={18} className="text-brand-500" />
-                Mức độ thành thạo theo chủ đề
-              </h2>
-              <span className="text-xs text-slate-400">Điểm EMA · Thang 100</span>
-            </div>
-            {radar && (
-              <>
-                <RadarChart
-                  labels={radar.labels}
-                  scores={radar.scores}
-                  axes={radar.axes}
-                />
-                {radar.truncated && (
-                  <p className="mt-2 text-center text-xs text-slate-400">
-                    Hiển thị {radar.axes.length}/{radar.total_topics} chủ đề
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* 4. Chủ đề cần củng cố (Cảnh báo đỏ) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy-800">
-              <AlertTriangle size={18} className="text-red-500" />
-              Chủ đề cần củng cố
-              {summary.weak_topics.length > 0 && (
-                <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-600">
-                  {summary.weak_topics.length}
-                </span>
+          {/* 3 & 4. Mức độ thành thạo + Cảnh báo củng cố (Desktop: Grid 12 cột, tỷ lệ ~60:40) */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* 3. Mức độ thành thạo theo chủ đề (Radar + Danh sách điểm) - chiếm 7/8 cột */}
+            <div className="lg:col-span-7 xl:col-span-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-base font-semibold text-navy-800">
+                  <LineChart size={18} className="text-brand-500" />
+                  Mức độ thành thạo theo chủ đề
+                </h2>
+                <span className="text-xs text-slate-400">Điểm EMA · Thang 100</span>
+              </div>
+              {radar && (
+                <>
+                  <RadarChart
+                    labels={radar.labels}
+                    scores={radar.scores}
+                    axes={radar.axes}
+                  />
+                  {radar.truncated && (
+                    <p className="mt-2 text-center text-xs text-slate-400">
+                      Hiển thị {radar.axes.length}/{radar.total_topics} chủ đề
+                    </p>
+                  )}
+                </>
               )}
-            </h2>
-            <WeakTopicAlerts weakTopics={summary.weak_topics} />
+            </div>
+
+            {/* 4. Chủ đề cần củng cố (Cảnh báo đỏ) - chiếm 5/4 cột */}
+            <div className="lg:col-span-5 xl:col-span-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy-800">
+                <AlertTriangle size={18} className="text-red-500" />
+                Chủ đề cần củng cố
+                {summary.weak_topics.length > 0 && (
+                  <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-600">
+                    {summary.weak_topics.length}
+                  </span>
+                )}
+              </h2>
+              <WeakTopicAlerts weakTopics={summary.weak_topics} />
+            </div>
           </div>
 
           {/* 5. Lịch sử làm bài gần đây */}
@@ -144,14 +148,19 @@ export default function ProgressDashboardPage() {
                 <History size={18} className="text-slate-500" />
                 Lịch sử làm bài gần đây
               </h2>
-              <a
-                href="#"
-                className="text-xs font-semibold text-brand-600 hover:text-brand-700"
-              >
-                Xem tất cả &rarr;
-              </a>
+              {summary.recent_attempts?.length > 5 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllAttempts((prev) => !prev)}
+                  className="text-xs font-semibold text-brand-600 hover:text-brand-700 cursor-pointer"
+                >
+                  {showAllAttempts ? 'Thu gọn \u2191' : 'Xem tất cả \u2192'}
+                </button>
+              )}
             </div>
-            <RecentAttemptsTable attempts={summary.recent_attempts} />
+            <RecentAttemptsTable
+              attempts={showAllAttempts ? summary.recent_attempts : summary.recent_attempts?.slice(0, 5)}
+            />
           </div>
         </div>
       )}

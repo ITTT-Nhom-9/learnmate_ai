@@ -121,16 +121,18 @@ export default function RadarChart({ labels = [], scores = [], axes = [], classN
       </div>
 
       {/* Cột phải: Danh sách điểm % chi tiết từng chủ đề */}
-      <div className="flex flex-col justify-center space-y-3 pl-0 md:pl-4">
+      <div className="flex flex-col justify-center space-y-3.5 pl-0 md:pl-4">
         {axes.map((axis, idx) => (
           <div
             key={axis.topic_id || idx}
-            className="flex items-center justify-between text-sm"
+            className="grid grid-cols-[1fr_auto] items-center gap-4 py-1.5 text-sm"
           >
-            <span className="truncate pr-2 text-slate-700">{axis.topic_name}</span>
+            <span className="truncate text-slate-700" title={axis.topic_name || labels[idx]}>
+              {axis.topic_name || labels[idx]}
+            </span>
             <span
               className={clsx(
-                'shrink-0 font-semibold',
+                'min-w-[48px] text-right font-semibold',
                 scores[idx] >= 80
                   ? 'text-emerald-600'
                   : scores[idx] >= 60
