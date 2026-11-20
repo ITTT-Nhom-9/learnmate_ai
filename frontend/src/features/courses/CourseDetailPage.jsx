@@ -13,7 +13,7 @@ import { estimateReadMinutes } from '../../utils/formatters';
 import { getErrorMessage } from '../../utils/apiError';
 import LessonContentView from './LessonContentView';
 import LessonTree from './LessonTree';
-import { getCourseProgress } from './courseUtils';
+import { computeLockStates, getCourseProgress, groupLessonsIntoModules } from './courseUtils';
 
 const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -70,12 +70,19 @@ export default function CourseDetailPage() {
     () => [...(course?.lessons || [])].sort((a, b) => a.order_index - b.order_index),
     [course]
   );
+  const modules = useMemo(() => groupLessonsIntoModules(lessons, course), [lessons, course]);
+  const { lockedLessonIds } = useMemo(() => computeLockStates(lessons), [lessons]);
+
   const activeLessonId = lessons.find((l) => l.id === lessonIdFromUrl)?.id ?? lessons[0]?.id ?? null;
   const activeIndex = lessons.findIndex((l) => l.id === activeLessonId);
   const activeLesson = lessons[activeIndex] || null;
+  const activeModule = useMemo(
+    () => modules.find((m) => m.lessons.some((l) => l.id === activeLessonId)),
+    [modules, activeLessonId]
+  );
   const prevLesson = activeIndex > 0 ? lessons[activeIndex - 1] : null;
   const nextLesson = activeIndex >= 0 && activeIndex < lessons.length - 1 ? lessons[activeIndex + 1] : null;
-  const progress = useMemo(() => getCourseProgress(lessons), [lessons]);
+  const progress = useMemo(() => getCourseProgress(lessons, course), [lessons, course]);
 
   // ---- Tải nội dung bài học đang chọn ----
   useEffect(() => {
@@ -222,11 +229,11 @@ export default function CourseDetailPage() {
           />
         </Sidebar>
 
-        <article className="mb-20 min-w-0 rounded-xl border border-slate-200 bg-white p-5 sm:p-8 lg:mb-0">
+        <article className="mb-20 min-w-0 max-w-4xl rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 lg:mb-0">
           <div className="flex items-center gap-3">
             <Badge>BÀI {activeLesson.order_index}</Badge>
             <span className="min-w-0 truncate text-sm text-slate-500">
-              {topicCount} chủ đề{readMinutes ? ` · ${readMinutes} phút đọc` : ''}
+              {activeModule ? `${activeModule.shortTitle} · ` : ''}{topicCount} chủ đề{readMinutes ? ` · ${readMinutes} phút đọc` : ''}
             </span>
             <button
               type="button"
@@ -270,7 +277,13 @@ export default function CourseDetailPage() {
               <span className="hidden sm:inline">Bài trước</span>
             </Button>
             {nextLesson && (
-              <Button variant="outline" onClick={() => goToLesson(nextLesson.id)} aria-label="Bài tiếp theo">
+              <Button
+                variant="outline"
+                disabled={lockedLessonIds.has(nextLesson.id)}
+                onClick={() => !lockedLessonIds.has(nextLesson.id) && goToLesson(nextLesson.id)}
+                aria-label="Bài tiếp theo"
+                title={lockedLessonIds.has(nextLesson.id) ? 'Vui lòng hoàn thành bài hiện tại để mở khóa' : 'Bài tiếp theo'}
+              >
                 <span className="hidden sm:inline">Bài tiếp theo</span>
                 <ArrowRight size={18} aria-hidden="true" />
               </Button>

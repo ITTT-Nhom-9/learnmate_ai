@@ -8,8 +8,11 @@ const CODE_PARTS = /(```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)|`[^`\n]+`)/g;
 
 function fixMath(text) {
   return text
-    .replace(/\\\[([\s\S]+?)\\\]/g, (_, body) => `\n\n$$\n${body.trim()}\n$$\n\n`)
-    .replace(/\\\(([\s\S]+?)\\\)/g, (_, body) => `$${body.trim()}$`)
+    // 1. Block math: \\[ ... \\] hoặc \\[\ ... \\] (hỗ trợ cả 1 hoặc nhiều dấu gạch chéo ngược)
+    .replace(/(?:\\+\[)([\s\S]+?)(?:\\+\])/g, (_, body) => `\n\n$$\n${body.trim()}\n$$\n\n`)
+    // 2. Inline math: \( ... \) hoặc \\( ... \\)
+    .replace(/(?:\\+\()([\s\S]+?)(?:\\+\))/g, (_, body) => `$${body.trim()}$`)
+    // 3. Đưa $$ nằm trên một dòng duy nhất xuống các dòng riêng biệt cho remark-math
     .replace(/^[ \t]*\$\$([^\n$]+?)\$\$[ \t]*$/gm, (_, body) => `\n$$\n${body.trim()}\n$$\n`);
 }
 

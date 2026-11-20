@@ -31,12 +31,12 @@ function labelViOf(status) {
 
 // --- Lịch sử làm bài gần đây ---
 const RECENT_ATTEMPTS = [
-  { attempt_id: 101, quiz_id: 501, quiz_title: 'Trắc nghiệm: DBMS & ACID', topic_id: 1, topic_name: 'Hệ quản trị CSDL (DBMS) và Hệ thống Tập tin truyền thống', difficulty: 'MEDIUM', score: 7.5, duration_sec: 420 },
-  { attempt_id: 102, quiz_id: 502, quiz_title: 'Trắc nghiệm: Kiến trúc 3 lược đồ', topic_id: 2, topic_name: 'Kiến trúc 3 lược đồ ANSI-SPARC và Tính độc lập dữ liệu', difficulty: 'MEDIUM', score: 8.0, duration_sec: 350 },
-  { attempt_id: 103, quiz_id: 503, quiz_title: 'Trắc nghiệm: Thực thể & Khóa', topic_id: 3, topic_name: 'Thực thể, Thuộc tính và Các loại Khóa định danh', difficulty: 'HARD', score: 6.5, duration_sec: 510 },
-  { attempt_id: 104, quiz_id: 504, quiz_title: 'Trắc nghiệm: ERD & Cardinality', topic_id: 4, topic_name: 'Mối kết hợp (Relationship) và Bản số (Cardinality)', difficulty: 'MEDIUM', score: 9.0, duration_sec: 280 },
-  { attempt_id: 105, quiz_id: 505, quiz_title: 'Trắc nghiệm: Ràng buộc Toàn vẹn', topic_id: 5, topic_name: 'Lược đồ Quan hệ và Ràng buộc Toàn vẹn (Integrity Constraints)', difficulty: 'MEDIUM', score: 4.0, duration_sec: 600 },
-  { attempt_id: 106, quiz_id: 501, quiz_title: 'Trắc nghiệm: DBMS & ACID (lần 2)', topic_id: 1, topic_name: 'Hệ quản trị CSDL (DBMS) và Hệ thống Tập tin truyền thống', difficulty: 'HARD', score: 8.5, duration_sec: 390 },
+  { attempt_id: 101, quiz_id: 501, quiz_title: 'Trắc nghiệm: DBMS & ACID', topic_id: 1, topic_name: 'Hệ quản trị CSDL (DBMS) và Hệ thống Tập tin truyền thống', difficulty: 'MEDIUM', score: 7.5, duration_sec: 420, created_at: '2026-11-20T08:30:00Z' },
+  { attempt_id: 102, quiz_id: 502, quiz_title: 'Trắc nghiệm: Kiến trúc 3 lược đồ', topic_id: 2, topic_name: 'Kiến trúc 3 lược đồ ANSI-SPARC và Tính độc lập dữ liệu', difficulty: 'MEDIUM', score: 8.0, duration_sec: 350, created_at: '2026-11-19T14:15:00Z' },
+  { attempt_id: 103, quiz_id: 503, quiz_title: 'Trắc nghiệm: Thực thể & Khóa', topic_id: 3, topic_name: 'Thực thể, Thuộc tính và Các loại Khóa định danh', difficulty: 'HARD', score: 6.5, duration_sec: 510, created_at: '2026-11-18T10:45:00Z' },
+  { attempt_id: 104, quiz_id: 504, quiz_title: 'Trắc nghiệm: ERD & Cardinality', topic_id: 4, topic_name: 'Mối kết hợp (Relationship) và Bản số (Cardinality)', difficulty: 'MEDIUM', score: 9.0, duration_sec: 280, created_at: '2026-11-17T16:20:00Z' },
+  { attempt_id: 105, quiz_id: 505, quiz_title: 'Trắc nghiệm: Ràng buộc Toàn vẹn', topic_id: 5, topic_name: 'Lược đồ Quan hệ và Ràng buộc Toàn vẹn (Integrity Constraints)', difficulty: 'MEDIUM', score: 4.0, duration_sec: 600, created_at: '2026-11-16T09:10:00Z' },
+  { attempt_id: 106, quiz_id: 501, quiz_title: 'Trắc nghiệm: DBMS & ACID (lần 2)', topic_id: 1, topic_name: 'Hệ quản trị CSDL (DBMS) và Hệ thống Tập tin truyền thống', difficulty: 'HARD', score: 8.5, duration_sec: 390, created_at: '2026-11-15T11:00:00Z' },
 ];
 
 // --- Chủ đề yếu (cảnh báo đỏ) ---

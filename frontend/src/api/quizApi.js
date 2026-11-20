@@ -28,4 +28,13 @@ export const quizApi = {
    *      correct_label, is_correct, explanation }] }
    */
   submit: (payload) => (USE_MOCK ? loadMock().then((m) => m.submit(payload)) : axiosClient.post('/quiz/submit', payload)),
+
+  /**
+   * GET /quizzes/attempts/{attempt_id} (SCR-06)
+   * Lấy chi tiết kết quả làm bài trắc nghiệm từ Backend nếu không có trong sessionStorage.
+   */
+  getAttempt: (attemptId) =>
+    USE_MOCK
+      ? loadMock().then((m) => m.getAttempt(attemptId))
+      : axiosClient.get(`/quizzes/attempts/${attemptId}`),
 };

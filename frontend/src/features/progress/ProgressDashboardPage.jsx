@@ -3,7 +3,6 @@ import { RefreshCw, AlertTriangle, LineChart, History } from 'lucide-react';
 import Spinner from '../../components/common/Spinner';
 import Button from '../../components/common/Button';
 import CourseSelector from './CourseSelector';
-import ProgressBar from './ProgressBar';
 import StatsCards from './StatsCards';
 import RadarChart from './RadarChart';
 import WeakTopicAlerts from './WeakTopicAlerts';
@@ -85,24 +84,13 @@ export default function ProgressDashboardPage() {
       {/* ===== DASHBOARD CONTENT ===== */}
       {!loading && !error && summary && (
         <div className="space-y-6">
-          {/* 1. Thanh % hoàn thành môn học */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-1 text-xs font-medium text-slate-500">
-              {summary.course_code} – {summary.course_title}
-            </div>
-            <ProgressBar
-              percent={summary.overall_progress_pct}
-              label="Tiến độ hoàn thành môn học"
-            />
-          </div>
-
-          {/* 2. 4 thẻ chỉ số nhanh */}
+          {/* 1. 4 thẻ chỉ số nhanh */}
           <StatsCards stats={summary.stats} />
 
           {/* 3 & 4. Mức độ thành thạo + Cảnh báo củng cố (Desktop: Grid 12 cột, tỷ lệ ~60:40) */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
             {/* 3. Mức độ thành thạo theo chủ đề (Radar + Danh sách điểm) - chiếm 7/8 cột */}
-            <div className="lg:col-span-7 xl:col-span-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-7 xl:col-span-8">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-base font-semibold text-navy-800">
                   <LineChart size={18} className="text-brand-500" />
@@ -127,7 +115,7 @@ export default function ProgressDashboardPage() {
             </div>
 
             {/* 4. Chủ đề cần củng cố (Cảnh báo đỏ) - chiếm 5/4 cột */}
-            <div className="lg:col-span-5 xl:col-span-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-5 xl:col-span-4">
               <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-navy-800">
                 <AlertTriangle size={18} className="text-red-500" />
                 Chủ đề cần củng cố

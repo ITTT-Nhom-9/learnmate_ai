@@ -130,7 +130,7 @@ class ProgressService:
             overall_progress_pct=self._overall_progress(topic_ids, masteries),
             stats=stats,
             weak_topics=self._weak_topic_alerts(user.id, rows, masteries, attempts),
-            recent_attempts=self._recent_attempts(user.id, topic_ids),
+            recent_attempts=self._recent_attempts(user.id, topic_ids, masteries),
         )
 
     # --------------------------------------------------------------------------
@@ -247,7 +247,9 @@ class ProgressService:
                 agg.last_score = float(score) if score is not None else None
         return aggs
 
-    def _recent_attempts(self, user_id: int, topic_ids: list[int]) -> list[RecentAttempt]:
+    def _recent_attempts(
+        self, user_id: int, topic_ids: list[int], masteries: dict[int, TopicMastery] | None = None
+    ) -> list[RecentAttempt]:
         if not topic_ids:
             return []
         rows = self.db.execute(
@@ -267,6 +269,16 @@ class ProgressService:
                 difficulty=quiz.difficulty,
                 score=float(attempt.score),
                 duration_sec=attempt.duration_sec,
+                created_at=(
+                    masteries[quiz.topic_id].last_practiced_at
+                    if masteries and quiz.topic_id in masteries
+                    else getattr(attempt, "created_at", None)
+                ),
+                last_practiced_at=(
+                    masteries[quiz.topic_id].last_practiced_at
+                    if masteries and quiz.topic_id in masteries
+                    else getattr(attempt, "created_at", None)
+                ),
             )
             for attempt, quiz, topic_name in rows
         ]

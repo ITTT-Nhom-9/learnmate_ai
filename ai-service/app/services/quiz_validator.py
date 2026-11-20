@@ -20,6 +20,18 @@ logger = logging.getLogger("ai_service.quiz_validator")
 JSON_BLOCK_REGEX = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
 
 
+def sanitize_json_string(text: str) -> str:
+    """Khắc phục các lỗi định dạng JSON thường gặp do LLM sinh ra:
+    1. Ký tự escape LaTeX không hợp lệ (ví dụ: \log, \le, \ge, \sum, \times, \infty...)
+    2. Dấu phẩy thừa ở cuối danh sách hoặc object (, } hoặc , ])
+    """
+    # Thay thế các dấu \ đơn lẻ không thuộc escape JSON chuẩn thành \\
+    sanitized = re.sub(r'\\(?![/"\\bfnrtu]|u[0-9a-fA-F]{4})', r'\\\\', text)
+    # Loại bỏ dấu phẩy thừa trước dấu đóng ngoặc
+    sanitized = re.sub(r',\s*([}\]])', r'\1', sanitized)
+    return sanitized
+
+
 def extract_json_object(raw_text: str) -> Dict[str, Any]:
     """Trích xuất từ điển JSON hợp lệ từ chuỗi văn bản thô do LLM trả về."""
     clean_text = raw_text.strip()
@@ -27,27 +39,49 @@ def extract_json_object(raw_text: str) -> Dict[str, Any]:
     # 1. Thử bóc tách từ khối mã ```json ... ```
     match = JSON_BLOCK_REGEX.search(clean_text)
     if match:
-        try:
-            return json.loads(match.group(1))
-        except json.JSONDecodeError as exc:
-            logger.warning(f"Lỗi cú pháp JSON trong khối markdown: {exc}")
+        snippet = match.group(1)
+        for cand in [snippet, sanitize_json_string(snippet)]:
+            try:
+                return json.loads(cand, strict=False)
+            except json.JSONDecodeError as exc:
+                logger.warning(f"Lỗi cú pháp JSON trong khối markdown: {exc}")
 
     # 2. Thử parse trực tiếp toàn bộ chuỗi
     if clean_text.startswith("{") and clean_text.endswith("}"):
-        try:
-            return json.loads(clean_text)
-        except json.JSONDecodeError as exc:
-            logger.warning(f"Lỗi cú pháp JSON trực tiếp: {exc}")
+        for cand in [clean_text, sanitize_json_string(clean_text)]:
+            try:
+                return json.loads(cand, strict=False)
+            except json.JSONDecodeError as exc:
+                logger.warning(f"Lỗi cú pháp JSON trực tiếp: {exc}")
 
     # 3. Tìm vị trí dấu ngoặc nhọn đầu tiên và cuối cùng
     start_idx = clean_text.find("{")
     end_idx = clean_text.rfind("}")
     if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
         candidate = clean_text[start_idx : end_idx + 1]
-        try:
-            return json.loads(candidate)
-        except json.JSONDecodeError as exc:
-            logger.warning(f"Lỗi cú pháp JSON khi cắt chuỗi: {exc}")
+        for cand in [candidate, sanitize_json_string(candidate)]:
+            try:
+                return json.loads(cand, strict=False)
+            except json.JSONDecodeError as exc:
+                logger.warning(f"Lỗi cú pháp JSON khi cắt chuỗi: {exc}")
+
+    # 4. Trường hợp LLM trả về trực tiếp mảng danh sách câu hỏi [...]
+    start_arr = clean_text.find("[")
+    end_arr = clean_text.rfind("]")
+    if start_arr != -1 and end_arr != -1 and end_arr > start_arr:
+        candidate_arr = clean_text[start_arr : end_arr + 1]
+        for cand in [candidate_arr, sanitize_json_string(candidate_arr)]:
+            try:
+                arr = json.loads(cand, strict=False)
+                if isinstance(arr, list) and len(arr) > 0:
+                    return {
+                        "title": "Trắc nghiệm kiến thức",
+                        "difficulty": "MEDIUM",
+                        "total_questions": len(arr),
+                        "questions": arr,
+                    }
+            except json.JSONDecodeError:
+                pass
 
     raise ValueError("Không tìm thấy đối tượng JSON hợp lệ trong phản hồi của mô hình")
 
@@ -139,6 +173,18 @@ async def generate_and_validate_quiz(
                 f"Lần thử {attempt + 1} thất bại do lỗi cấu trúc JSON: {exc}. "
                 + (f"Tiến hành thử lại ({attempt + 1}/{max_retries})..." if attempt < max_retries else "")
             )
+            if attempt < max_retries:
+                messages = [
+                    LLMMessage(role="user", content=user_message),
+                    LLMMessage(
+                        role="user",
+                        content=(
+                            f"LƯU Ý QUAN TRỌNG: Lần sinh trước bị lỗi cú pháp ({exc}). "
+                            "Bắt buộc trả về duy nhất 1 chuỗi JSON hợp lệ 100%, không có dấu phẩy thừa, "
+                            "mọi ký tự backslash trong công thức phải được escape thành \\\\."
+                        ),
+                    ),
+                ]
 
     raise AIException(
         error_code="QUIZ_SCHEMA_INVALID",

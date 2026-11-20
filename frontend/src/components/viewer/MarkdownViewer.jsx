@@ -76,7 +76,7 @@ function MarkdownViewer({ source, variant = 'lesson' }) {
   return (
     <div className={className}>
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={map}>
-        {variant === 'chat' ? normalizeMath(source) : source || ''}
+        {normalizeMath(source)}
       </ReactMarkdown>
     </div>
   );

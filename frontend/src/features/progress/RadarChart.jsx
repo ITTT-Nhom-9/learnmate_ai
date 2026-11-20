@@ -121,7 +121,7 @@ export default function RadarChart({ labels = [], scores = [], axes = [], classN
       </div>
 
       {/* Cột phải: Danh sách điểm % chi tiết từng chủ đề */}
-      <div className="flex flex-col justify-center space-y-3.5 pl-0 md:pl-4">
+      <div className="flex flex-col justify-center space-y-3.5 pl-0 pr-4 sm:pr-6 md:pl-4 md:pr-8 lg:pr-10">
         {axes.map((axis, idx) => (
           <div
             key={axis.topic_id || idx}

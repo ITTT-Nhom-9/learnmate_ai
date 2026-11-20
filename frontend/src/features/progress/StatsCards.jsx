@@ -3,6 +3,7 @@ import { Award, FileCheck2, Layers, Clock } from 'lucide-react';
 
 function formatDuration(totalSec) {
   if (totalSec == null || totalSec === 0) return '0 phút';
+  if (totalSec < 60) return `${totalSec} giây`;
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   if (h > 0) return `${h}h ${m > 0 ? m + 'm' : ''}`;

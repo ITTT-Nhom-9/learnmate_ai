@@ -116,3 +116,6 @@ class QuizSubmitResponse(BaseModel):
     duration_sec: int
     status: str
     answers: List[AnswerResultOut]
+    quiz: Optional[QuizPublicResponse] = None
+    topic_id: Optional[int] = None
+    lesson_id: Optional[int] = None
