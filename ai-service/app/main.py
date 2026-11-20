@@ -5,6 +5,7 @@ from app.routers.health_router import router as health_router
 from app.routers.tutor_router import router as tutor_router
 from app.routers.socratic_router import router as socratic_router
 from app.routers.quiz_router import router as quiz_router
+from app.routers.rag_router import router as rag_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -18,6 +19,7 @@ app.include_router(health_router)
 app.include_router(tutor_router)
 app.include_router(socratic_router)
 app.include_router(quiz_router)
+app.include_router(rag_router)
 
 
 @app.get("/")
