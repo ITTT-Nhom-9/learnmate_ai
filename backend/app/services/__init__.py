@@ -3,6 +3,7 @@ from app.services.ai_rag_client import AIRAGClient, get_ai_rag_client
 from app.services.mastery_service import MasteryEngine, MasteryService
 from app.services.rag_service import RAGService
 from app.services.recommendation_service import RecommendationService
+from app.services.admin_service import AdminService, AdminError, UserNotFoundError, PromptNotFoundError
 
 __all__ = [
     "AIRAGClient",
@@ -11,4 +12,8 @@ __all__ = [
     "MasteryService",
     "RAGService",
     "RecommendationService",
+    "AdminService",
+    "AdminError",
+    "UserNotFoundError",
+    "PromptNotFoundError",
 ]
