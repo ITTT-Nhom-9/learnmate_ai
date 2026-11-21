@@ -15,6 +15,13 @@ const QuizTakePage = lazy(() => import('../features/quiz/QuizTakePage')); // SCR
 const QuizResultPage = lazy(() => import('../features/quiz/QuizResultPage')); // SCR-06
 const ProgressDashboardPage = lazy(() => import('../features/progress/ProgressDashboardPage')); // SCR-07
 
+// SCR-08: khu vực quản trị, tách chunk riêng vì sinh viên không bao giờ tải tới
+const AdminLayout = lazy(() => import('../features/admin/AdminLayout'));
+const UserManagementPage = lazy(() => import('../features/admin/UserManagementPage'));
+const PromptConfigPage = lazy(() => import('../features/admin/PromptConfigPage'));
+const TokenLogPage = lazy(() => import('../features/admin/TokenLogPage'));
+const RagDocumentsPage = lazy(() => import('../features/admin/RagDocumentsPage'));
+
 const pageFallback = (
   <div className="flex justify-center py-24 text-slate-400">
     <Spinner size={28} />
@@ -81,6 +88,24 @@ export default function AppRoutes() {
               <ProgressDashboardPage />
             </Suspense>
           } />
+        </Route>
+      </Route>
+
+      {/* SCR-08: Quản trị viên (RBAC: sinh viên bị chuyển về /courses) */}
+      <Route element={<ProtectedRoute roles={['ADMIN']} />}>
+        <Route
+          path="/admin"
+          element={
+            <Suspense fallback={pageFallback}>
+              <AdminLayout />
+            </Suspense>
+          }
+        >
+          <Route index element={<Navigate to="users" replace />} />
+          <Route path="users" element={<UserManagementPage />} />
+          <Route path="prompts" element={<PromptConfigPage />} />
+          <Route path="tokens" element={<TokenLogPage />} />
+          <Route path="documents" element={<RagDocumentsPage />} />
         </Route>
       </Route>
 
