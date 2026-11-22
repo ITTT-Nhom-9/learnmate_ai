@@ -1,6 +1,7 @@
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import String, engine_from_config, inspect, pool
 from alembic import context
+from alembic.ddl.mysql import MySQLImpl
 
 # Import Core Settings và Base Metadata
 from app.core.config import settings
@@ -21,6 +22,16 @@ if config.config_file_name is not None:
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 target_metadata = Base.metadata
+
+
+class LearnMateMySQLImpl(MySQLImpl):
+    __dialect__ = "mysql"
+
+    def version_table_impl(self, **kwargs):
+        # Existing revision IDs exceed Alembic's default VARCHAR(32).
+        table = super().version_table_impl(**kwargs)
+        table.c.version_num.type = String(64)
+        return table
 
 
 def run_migrations_offline() -> None:
@@ -49,6 +60,19 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+        if connection.dialect.name == "mysql":
+            inspector = inspect(connection)
+            if inspector.has_table("alembic_version"):
+                version_column = next(
+                    column for column in inspector.get_columns("alembic_version")
+                    if column["name"] == "version_num"
+                )
+                if version_column["type"].length < 64:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE alembic_version MODIFY version_num VARCHAR(64) NOT NULL"
+                    )
+            connection.commit()
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata
