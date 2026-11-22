@@ -164,6 +164,10 @@ class Recommendation(Base):
         default=lambda: datetime.now(timezone.utc),
     )
 
+    __table_args__ = (
+        Index("idx_user_status_prio", "user_id", "status", "priority"),
+    )
+
     # Quan hệ N:1
     user = relationship("User", back_populates="recommendations")
     topic = relationship("Topic", back_populates="recommendations")
