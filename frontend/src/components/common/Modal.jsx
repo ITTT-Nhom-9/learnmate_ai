@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react';
 import { X } from 'lucide-react';
 import clsx from 'clsx';
 import { useModalBehavior } from '../../hooks/useModalBehavior';
@@ -9,7 +10,11 @@ const SIZES = { md: 'sm:max-w-md', lg: 'sm:max-w-2xl' };
  * busy=true: chặn đóng bằng Esc / bấm nền / nút X trong lúc đang gửi dữ liệu.
  */
 export default function Modal({ open, onClose, title, children, footer, size = 'md', busy = false }) {
-  const requestClose = () => !busy && onClose();
+  // Giữ tham chiếu ổn định tới hàm đóng. Nếu truyền hàm mới ở mỗi lần render, useModalBehavior sẽ chạy lại effect
+  // sau mỗi phím gõ: tiêu điểm bị kéo ra khỏi ô nhập (input/textarea) và người dùng chỉ gõ được 1 ký tự.
+  const closeRef = useRef(onClose);
+  closeRef.current = () => !busy && onClose();
+  const requestClose = useCallback(() => closeRef.current(), []);
   const panelRef = useModalBehavior(open, requestClose);
   if (!open) return null;
 

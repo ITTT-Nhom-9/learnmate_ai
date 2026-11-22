@@ -26,9 +26,15 @@ export const ragApi = {
     });
   },
 
-  /** GET /rag/documents?course_id= -> { total, items: [{ id, course_id, file_name, file_size, total_chunks, created_at }] } */
+  /** GET /rag/documents?course_id= -> { total, items: [{ id, course_id, file_name, file_size, total_chunks, total_pages, created_at, uploaded_by }] } */
   getDocuments: (courseId) =>
     USE_MOCK ? loadMock().then((m) => m.getDocuments(courseId)) : axiosClient.get('/rag/documents', { params: { course_id: courseId } }),
+
+  /** PATCH /rag/documents/{id} { file_name } -> dòng tài liệu đã cập nhật. Chỉ người tải lên hoặc ADMIN (FR-RG-04). */
+  renameDocument: (documentId, fileName) =>
+    USE_MOCK
+      ? loadMock().then((m) => m.renameDocument(documentId, fileName))
+      : axiosClient.patch(`/rag/documents/${documentId}`, { file_name: fileName }),
 
   /** DELETE /rag/documents/{id}: xóa tài liệu và cascade toàn bộ vector embedding. */
   deleteDocument: (documentId) =>

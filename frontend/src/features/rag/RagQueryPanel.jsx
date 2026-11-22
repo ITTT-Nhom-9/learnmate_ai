@@ -5,7 +5,7 @@ import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import { ragApi } from '../../api/ragApi';
 import { getErrorMessage } from '../../utils/apiError';
-import { FilterSelect } from './AdminCommon';
+import { FilterSelect } from '../admin/AdminCommon';
 
 function CitationList({ citations }) {
   return (

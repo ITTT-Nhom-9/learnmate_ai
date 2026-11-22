@@ -7,7 +7,7 @@ import { getErrorMessage } from '../../utils/apiError';
  * `fetcher` có thể trả về null để bỏ qua (ví dụ chưa chọn môn học).
  */
 export function useAdminQuery(fetcher, deps) {
-  const [state, setState] = useState({ data: null, loading: true, error: null });
+  const [state, setState] = useState({ data: null, loading: true, error: null, errorStatus: null });
   const [tick, setTick] = useState(0);
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
@@ -16,13 +16,17 @@ export function useAdminQuery(fetcher, deps) {
     let cancelled = false;
     const request = fetcherRef.current();
     if (!request) {
-      setState({ data: null, loading: false, error: null });
+      setState({ data: null, loading: false, error: null, errorStatus: null });
       return undefined;
     }
-    setState((s) => ({ ...s, loading: true, error: null }));
+    setState((s) => ({ ...s, loading: true, error: null, errorStatus: null }));
     request
-      .then((data) => !cancelled && setState({ data, loading: false, error: null }))
-      .catch((err) => !cancelled && setState((s) => ({ ...s, loading: false, error: getErrorMessage(err) })));
+      .then((data) => !cancelled && setState({ data, loading: false, error: null, errorStatus: null }))
+      .catch(
+        (err) =>
+          !cancelled &&
+          setState((s) => ({ ...s, loading: false, error: getErrorMessage(err), errorStatus: err.response?.status ?? null }))
+      );
     return () => {
       cancelled = true;
     };

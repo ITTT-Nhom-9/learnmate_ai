@@ -21,6 +21,12 @@ export const adminApi = {
       ? loadMock().then((m) => m.updateUserStatus(userId, { status, reason }))
       : axiosClient.patch(`/admin/users/${userId}/status`, clean({ status, reason })),
 
+  /** PATCH /admin/users/{id}/role { role: 'STUDENT'|'ADMIN' } -> UserAdminItem. Backend chặn Admin tự giáng quyền của chính mình. */
+  updateUserRole: (userId, role) =>
+    USE_MOCK
+      ? loadMock().then((m) => m.updateUserRole(userId, role))
+      : axiosClient.patch(`/admin/users/${userId}/role`, { role }),
+
   /** GET /admin/prompts -> [{ id, code, version, content, is_active, created_at }] */
   getPrompts: ({ code } = {}) =>
     USE_MOCK ? loadMock().then((m) => m.getPrompts({ code })) : axiosClient.get('/admin/prompts', { params: clean({ code }) }),

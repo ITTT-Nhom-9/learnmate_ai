@@ -53,31 +53,63 @@ function GroupBreakdown({ groups = [], totalTokens, labelOf }) {
   );
 }
 
-/** Biểu đồ cột token theo ngày (thuần CSS, không cần thêm thư viện). */
-function DailyChart({ days = [] }) {
-  const sorted = [...days].sort((a, b) => a.key.localeCompare(b.key));
-  if (sorted.length === 0) return <p className="py-6 text-center text-sm text-slate-400">Chưa có dữ liệu trong khoảng thời gian này.</p>;
-  const max = Math.max(...sorted.map((d) => d.total_tokens), 1);
+const MAX_CHART_DAYS = 90;
+const EMPTY_DAY = { total_tokens: 0, request_count: 0, estimated_cost_usd: 0 };
+const shortDay = (key) => `${key.slice(8, 10)}/${key.slice(5, 7)}`; // 2026-11-22 -> 22/11
+
+/** Dựng trục ngày liên tục từ..đến, ngày không có lượt gọi nào được điền 0 để mỗi ngày luôn là một cột riêng. */
+function buildDailySeries(days, from, to) {
+  const byKey = new Map(days.map((d) => [d.key, d]));
+  const keys = days.map((d) => d.key).sort();
+  const start = [from, keys[0]].filter(Boolean).sort()[0]; // mở rộng nếu dữ liệu nằm ngoài khoảng đã chọn (lệch múi giờ UTC)
+  const end = [to, keys[keys.length - 1]].filter(Boolean).sort().slice(-1)[0];
+  if (!start || !end) return [];
+  const series = [];
+  const cursor = new Date(`${start}T00:00:00Z`);
+  const last = new Date(`${end}T00:00:00Z`);
+  while (cursor <= last) {
+    const key = cursor.toISOString().slice(0, 10);
+    series.push(byKey.get(key) || { key, ...EMPTY_DAY });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return series.slice(-MAX_CHART_DAYS);
+}
+
+/** Biểu đồ cột token theo ngày (thuần CSS, không cần thêm thư viện): mỗi ngày một cột, có nhãn ngày và tổng khoảng chọn. */
+function DailyChart({ days = [], from, to }) {
+  const series = buildDailySeries(days, from, to);
+  if (series.length === 0) return <p className="py-6 text-center text-sm text-slate-400">Chưa có dữ liệu trong khoảng thời gian này.</p>;
+
+  const max = Math.max(...series.map((d) => d.total_tokens), 1);
+  const total = series.reduce((sum, d) => sum + d.total_tokens, 0);
+  const activeDays = series.filter((d) => d.total_tokens > 0).length;
+  const labelEvery = series.length <= 10 ? 1 : series.length <= 31 ? 5 : 10; // thưa nhãn khi nhiều cột để không chồng chữ
+
   return (
     <div>
+      <p className="mb-3 text-sm text-slate-500">
+        <span className="font-semibold text-navy-800">{formatNumber(total)}</span> token trong {series.length} ngày · {activeDays} ngày có hoạt động · đỉnh {formatNumber(max)} token/ngày
+      </p>
       <div
         role="img"
-        aria-label={`Biểu đồ token theo ngày, từ ${sorted[0].key} đến ${sorted[sorted.length - 1].key}`}
-        className="flex h-40 items-end gap-1 border-b border-slate-200"
+        aria-label={`Biểu đồ token theo ngày, từ ${series[0].key} đến ${series[series.length - 1].key}, tổng ${formatNumber(total)} token`}
+        className="flex h-40 items-end gap-0.5 border-b border-slate-200 sm:gap-1"
       >
-        {sorted.map((d) => (
-          <div
-            key={d.key}
-            title={`${d.key}: ${formatNumber(d.total_tokens)} token · ${formatUsd(d.estimated_cost_usd)}`}
-            className="min-w-[3px] flex-1 rounded-t bg-brand-500/80 transition-colors hover:bg-brand-600"
-            style={{ height: `${Math.max(2, (d.total_tokens / max) * 100)}%` }}
-          />
+        {series.map((d) => (
+          <div key={d.key} className="flex h-full min-w-0 flex-1 items-end justify-center" title={`${shortDay(d.key)}: ${formatNumber(d.total_tokens)} token · ${formatNumber(d.request_count)} lượt · ${formatUsd(d.estimated_cost_usd)}`}>
+            <div
+              className={d.total_tokens > 0 ? 'w-full max-w-[40px] rounded-t bg-brand-500/85 transition-colors hover:bg-brand-600' : 'w-full max-w-[40px] rounded-t bg-slate-200'}
+              style={{ height: d.total_tokens > 0 ? `${Math.max(4, (d.total_tokens / max) * 100)}%` : '2px' }}
+            />
+          </div>
         ))}
       </div>
-      <div className="mt-1.5 flex justify-between text-xs text-slate-400">
-        <span>{sorted[0].key}</span>
-        <span>Đỉnh: {formatNumber(max)} token/ngày</span>
-        <span>{sorted[sorted.length - 1].key}</span>
+      <div className="mt-1.5 flex gap-0.5 text-[10px] text-slate-400 sm:gap-1 sm:text-xs" aria-hidden="true">
+        {series.map((d, i) => (
+          <span key={d.key} className="min-w-0 flex-1 overflow-visible whitespace-nowrap text-center">
+            {i % labelEvery === 0 || i === series.length - 1 ? shortDay(d.key) : ''}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -157,7 +189,7 @@ export default function TokenLogPage() {
           </div>
 
           <Panel title="Token theo ngày" icon={Activity}>
-            <DailyChart days={stats.data.by_date} />
+            <DailyChart days={stats.data.by_date} from={range.from} to={range.to} />
           </Panel>
         </div>
       )}

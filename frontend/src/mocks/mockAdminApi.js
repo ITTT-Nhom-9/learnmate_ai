@@ -2,6 +2,7 @@
 //  /admin/users, /admin/prompts, /admin/logs, /admin/logs/tokens.
 // Dữ liệu nằm trong bộ nhớ: thao tác khóa / sửa prompt có hiệu lực đến khi tải lại trang.
 import { normalizeText } from '../utils/formatters';
+import { useAuthStore } from '../store/useAuthStore';
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -63,6 +64,17 @@ export async function updateUserStatus(userId, { status }) {
     throw httpError(403, 'Không thể khóa Quản trị viên đang hoạt động duy nhất của hệ thống');
   }
   user.status = status;
+  return { ...user };
+}
+
+export async function updateUserRole(userId, role) {
+  await delay();
+  const user = users.find((u) => u.id === Number(userId));
+  if (!user) throw httpError(404, 'Người dùng không tồn tại');
+  if (!['STUDENT', 'ADMIN'].includes(role)) throw httpError(403, 'Vai trò chỉ có thể là STUDENT hoặc ADMIN');
+  // Giống Backend: Admin không được tự giáng quyền của chính mình
+  if (useAuthStore.getState().user?.id === user.id && role !== 'ADMIN') throw httpError(403, 'Không thể tự giáng quyền của chính mình');
+  user.role = role;
   return { ...user };
 }
 

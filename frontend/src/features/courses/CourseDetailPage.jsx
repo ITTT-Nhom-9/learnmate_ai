@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BookX, HelpCircle, ListTree, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookX, FileText, HelpCircle, ListTree, Sparkles } from 'lucide-react';
 import AlertBox from '../../components/common/AlertBox';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
@@ -235,13 +235,22 @@ export default function CourseDetailPage() {
             <span className="min-w-0 truncate text-sm text-slate-500">
               {activeModule ? `${activeModule.shortTitle} · ` : ''}{topicCount} chủ đề{readMinutes ? ` · ${readMinutes} phút đọc` : ''}
             </span>
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              className="ml-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-navy-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 lg:hidden"
-            >
-              <ListTree size={16} aria-hidden="true" /> Mục lục
-            </button>
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate(`/courses/${courseId}/documents`)}
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-navy-800 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+              >
+                <FileText size={16} aria-hidden="true" /> Tài liệu PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-navy-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 lg:hidden"
+              >
+                <ListTree size={16} aria-hidden="true" /> Mục lục
+              </button>
+            </div>
           </div>
 
           <h1 className="mt-3 border-b border-slate-200 pb-5 text-2xl font-bold leading-snug text-navy-800 sm:text-[28px]">

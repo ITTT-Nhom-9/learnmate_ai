@@ -10,6 +10,7 @@ import ProtectedRoute, { GuestRoute } from './ProtectedRoute';
 
 // Trang chi tiết môn kéo theo thư viện Markdown/KaTeX/Prism (nặng) -> chỉ tải khi người dùng mở môn học
 const CourseDetailPage = lazy(() => import('../features/courses/CourseDetailPage'));
+const CourseDocumentsPage = lazy(() => import('../features/courses/CourseDocumentsPage')); // RAG cho sinh viên
 const TutorChatPage = lazy(() => import('../features/tutor/TutorChatPage'));
 const QuizTakePage = lazy(() => import('../features/quiz/QuizTakePage')); // SCR-05
 const QuizResultPage = lazy(() => import('../features/quiz/QuizResultPage')); // SCR-06
@@ -40,6 +41,15 @@ export default function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Navigate to="/courses" replace />} />
           <Route path="/courses" element={<CourseCatalogPage />} />
+          {/* Tài liệu PDF & hỏi đáp có trích dẫn trang (FR-RG-*): sinh viên đã ghi danh dùng, không cần quyền Admin */}
+          <Route
+            path="/courses/:courseId/documents"
+            element={
+              <Suspense fallback={pageFallback}>
+                <CourseDocumentsPage />
+              </Suspense>
+            }
+          />
           {/* "/*" bắt cả /courses/:id và /courses/:id/lessons/:lessonId bằng một trang, đổi bài không remount */}
           <Route
             path="/courses/:courseId/*"

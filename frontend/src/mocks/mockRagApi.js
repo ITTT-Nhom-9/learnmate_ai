@@ -1,6 +1,7 @@
 // Dữ liệu mock cho SCR-08 · Tab RAG (TK-26): giả lập Upload PDF, danh sách tài liệu và Hỏi đáp có trích dẫn số trang.
 // Mô phỏng hợp đồng API của Backend (TK-24 / TK-25): /rag/upload, /rag/documents, /rag/query.
 import { normalizeText } from '../utils/formatters';
+import { useAuthStore } from '../store/useAuthStore';
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 const MAX_BYTES = 20 * 1024 * 1024;
@@ -9,9 +10,20 @@ function httpError(status, detail) {
   return Object.assign(new Error(detail), { response: { status, data: { detail } } });
 }
 
+// uploaded_by: 0 = giáo trình chuẩn do Admin tải lên (sinh viên chỉ xem / hỏi đáp, không sửa được)
 const documents = [
-  { id: 1, course_id: 1, file_name: 'Giao_trinh_Co_so_du_lieu.pdf', file_size: 4194304, total_chunks: 42, created_at: new Date(Date.now() - 8 * 86400000).toISOString() },
+  { id: 1, course_id: 1, file_name: 'Giao_trinh_Co_so_du_lieu.pdf', file_size: 4194304, total_chunks: 42, total_pages: 38, uploaded_by: 0, created_at: new Date(Date.now() - 8 * 86400000).toISOString() },
 ];
+const currentUser = () => useAuthStore.getState().user;
+
+// Giống Backend: chỉ người tải lên hoặc ADMIN được đổi tên / xóa
+function findManageable(documentId, verb) {
+  const doc = documents.find((d) => d.id === Number(documentId));
+  if (!doc) throw httpError(404, `Không tìm thấy tài liệu có ID ${documentId}.`);
+  const me = currentUser();
+  if (me?.role !== 'ADMIN' && doc.uploaded_by !== me?.id) throw httpError(403, `Bạn chỉ có thể ${verb} tài liệu do chính mình tải lên.`);
+  return doc;
+}
 let nextId = 2;
 
 export async function getDocuments(courseId) {
@@ -31,7 +43,7 @@ export async function uploadDocument({ courseId, file, onProgress }) {
 
   const total_pages = Math.max(1, Math.round(file.size / 45000)); // ~45KB mỗi trang
   const total_chunks = Math.max(1, Math.round(total_pages * 0.9)); // ~500 từ mỗi đoạn, gối đầu 50 từ
-  const doc = { id: nextId++, course_id: Number(courseId), file_name: file.name, file_size: file.size, total_chunks, created_at: new Date().toISOString() };
+  const doc = { id: nextId++, course_id: Number(courseId), file_name: file.name, file_size: file.size, total_chunks, total_pages, uploaded_by: currentUser()?.id ?? 0, created_at: new Date().toISOString() };
   documents.push(doc);
   return {
     document_id: doc.id,
@@ -46,11 +58,19 @@ export async function uploadDocument({ courseId, file, onProgress }) {
   };
 }
 
+export async function renameDocument(documentId, fileName) {
+  await delay();
+  const doc = findManageable(documentId, 'đổi tên');
+  const name = String(fileName || '').split(/\s+/).filter(Boolean).join(' ');
+  if (!name || /[/\\]/.test(name) || name.length > 255) throw httpError(422, 'Tên tài liệu không hợp lệ.');
+  doc.file_name = name;
+  return { ...doc };
+}
+
 export async function deleteDocument(documentId) {
   await delay();
-  const index = documents.findIndex((d) => d.id === Number(documentId));
-  if (index < 0) throw httpError(404, `Không tìm thấy tài liệu có ID ${documentId}.`);
-  documents.splice(index, 1);
+  const doc = findManageable(documentId, 'xóa');
+  documents.splice(documents.indexOf(doc), 1);
   return { status: 'success', message: `Đã xóa tài liệu có ID ${documentId} và toàn bộ vector embedding liên quan thành công.` };
 }
 

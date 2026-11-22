@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Lock, Search, Unlock, Users } from 'lucide-react';
+import { Lock, Search, ShieldCheck, ShieldOff, Unlock, Users } from 'lucide-react';
 import AlertBox from '../../components/common/AlertBox';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
@@ -11,6 +11,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { getErrorMessage } from '../../utils/apiError';
 import { getInitials } from '../../utils/formatters';
 import { AdminPageHeader, FilterSelect, Pagination, Panel } from './AdminCommon';
+import UserRoleDialog from './UserRoleDialog';
 import { formatDate } from './adminUtils';
 import { useAdminQuery } from './useAdminQuery';
 
@@ -91,7 +92,8 @@ export default function UserManagementPage() {
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
-  const [target, setTarget] = useState(null);
+  const [target, setTarget] = useState(null); // người đang chờ xác nhận khóa / mở khóa
+  const [roleTarget, setRoleTarget] = useState(null); // người đang chờ xác nhận đổi vai trò
   const [notice, setNotice] = useState(null);
 
   // Chờ 400ms sau lần gõ cuối mới gọi API để tránh bắn request theo từng phím
@@ -120,24 +122,42 @@ export default function UserManagementPage() {
     reload();
   };
 
+  const handleRoleDone = (updated, promoted) => {
+    setRoleTarget(null);
+    setNotice(promoted ? `Đã cấp quyền Quản trị viên cho ${updated.full_name}.` : `Đã chuyển ${updated.full_name} về Sinh viên.`);
+    reload();
+  };
+
+  // Admin không thao tác lên chính mình: tránh tự khóa hoặc tự mất quyền kiểm soát hệ thống
   const renderAction = (u) =>
     u.id === me?.id ? (
       <span className="text-xs text-slate-400">Tài khoản của bạn</span>
     ) : (
-      <Button
-        variant="outline"
-        size="sm"
-        icon={u.status === 'ACTIVE' ? Lock : Unlock}
-        onClick={() => setTarget(u)}
-        className="w-full md:w-auto"
-      >
-        {u.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
-      </Button>
+      <div className="flex gap-2 md:justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          icon={u.role === 'ADMIN' ? ShieldOff : ShieldCheck}
+          onClick={() => setRoleTarget(u)}
+          className="flex-1 md:flex-none"
+        >
+          {u.role === 'ADMIN' ? 'Hạ quyền' : 'Cấp quyền Admin'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          icon={u.status === 'ACTIVE' ? Lock : Unlock}
+          onClick={() => setTarget(u)}
+          className="flex-1 md:flex-none"
+        >
+          {u.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
+        </Button>
+      </div>
     );
 
   return (
     <>
-      <AdminPageHeader title="Quản lý người dùng" description="Tìm kiếm tài khoản, khóa hoặc mở khóa khi cần." />
+      <AdminPageHeader title="Quản lý người dùng" description="Tìm kiếm tài khoản, phân quyền Quản trị viên, khóa hoặc mở khóa khi cần." />
 
       {notice && (
         <AlertBox tone="success" className="mb-4" action={<button type="button" onClick={() => setNotice(null)} className="text-xs font-semibold underline">Đóng</button>}>
@@ -245,6 +265,7 @@ export default function UserManagementPage() {
       </Panel>
 
       {target && <UserStatusDialog key={target.id} user={target} onClose={() => setTarget(null)} onDone={handleDone} />}
+      {roleTarget && <UserRoleDialog key={roleTarget.id} user={roleTarget} onClose={() => setRoleTarget(null)} onDone={handleRoleDone} />}
     </>
   );
 }
