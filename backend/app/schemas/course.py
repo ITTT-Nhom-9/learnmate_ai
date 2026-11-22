@@ -97,3 +97,58 @@ class EnrollmentResponse(BaseModel):
     status: str = "ACTIVE"
     enrolled_at: datetime
     message: str = "Ghi danh môn học thành công"
+
+
+# ------------------------------------------------------------------------------
+# Quản lý Môn học (Admin Course CRUD)
+# ------------------------------------------------------------------------------
+
+class CourseCreate(BaseModel):
+    code: str
+    title: str
+    description: str | None = None
+    status: str = "ACTIVE"
+
+
+class CourseUpdate(BaseModel):
+    code: str | None = None
+    title: str | None = None
+    description: str | None = None
+    status: str | None = None
+
+
+class LessonCreate(BaseModel):
+    title: str
+    order_index: int = 1
+
+
+class LessonUpdate(BaseModel):
+    title: str | None = None
+    order_index: int | None = None
+
+
+class TopicCreate(BaseModel):
+    name: str
+    description: str | None = None
+
+
+class TopicUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+
+
+class ContentCreate(BaseModel):
+    content_type: str = "MARKDOWN"
+    body: str
+
+
+class ContentUpdate(BaseModel):
+    content_type: str | None = None
+    body: str | None = None
+
+
+class CourseActionResponse(BaseModel):
+    success: bool = True
+    message: str
+    action: str | None = None
+    data: dict | None = None

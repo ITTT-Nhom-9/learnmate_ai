@@ -13,11 +13,11 @@ import { PROMPT_CODES } from './adminUtils';
  *  - mode="create": tạo phiên bản mới cho một mã (POST /admin/prompts), version tự tăng, phục vụ A/B Testing.
  * templates: { [code]: nội dung đang kích hoạt } để điền sẵn khi tạo phiên bản mới.
  */
-export default function PromptEditorDialog({ mode, prompt, defaultCode, templates = {}, onClose, onSaved }) {
-  const isEdit = mode === 'edit';
-  const [code, setCode] = useState(isEdit ? prompt.code : defaultCode);
-  const [content, setContent] = useState(isEdit ? prompt.content : templates[defaultCode] || '');
-  const [isActive, setIsActive] = useState(isEdit ? prompt.is_active : true);
+export default function PromptEditorDialog({ mode, prompt, defaultCode = 'TUTOR_EXPLAIN', templates = {}, onClose, onSaved }) {
+  const isEdit = mode === 'edit' || (Boolean(prompt) && mode !== 'create');
+  const [code, setCode] = useState(prompt?.code || defaultCode);
+  const [content, setContent] = useState(prompt?.content || templates[defaultCode] || '');
+  const [isActive, setIsActive] = useState(prompt?.is_active ?? true);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);

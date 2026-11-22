@@ -6,8 +6,10 @@ const loadMock = () => import('../mocks/mockCourseApi.js'); // tách chunk riên
 
 export const courseApi = {
   /** API-05 -> { courses: [{ id, code, title, progress_pct, is_enrolled, total_lessons }], total } */
-  getCourses: ({ page = 1, limit = 50 } = {}) =>
-    USE_MOCK ? loadMock().then((m) => m.getCourses()) : axiosClient.get('/courses', { params: { page, limit } }),
+  getCourses: ({ page = 1, limit = 50, include_inactive = false } = {}) =>
+    USE_MOCK
+      ? loadMock().then((m) => m.getCourses())
+      : axiosClient.get('/courses', { params: { page, limit, include_inactive } }),
 
   /** API-06 -> { id, code, title, lessons: [{ id, title, order_index, topics: [{ id, name, mastery_score }] }] } */
   getCourseDetail: (courseId) =>
@@ -25,4 +27,52 @@ export const courseApi = {
     USE_MOCK
       ? loadMock().then((m) => m.getLessonDetail(courseId, lessonId))
       : axiosClient.get(`/courses/${courseId}/lessons/${lessonId}`),
+
+  // ===========================================================================
+  // QUẢN TRỊ VIÊN: CRUD KHÓA HỌC, BÀI HỌC, CHỦ ĐỀ VÀ NỘI DUNG (TK-26 / TK-35)
+  // ===========================================================================
+
+  /** POST /courses: Thêm môn học mới */
+  createCourse: ({ code, title, description, status = 'ACTIVE' }) =>
+    axiosClient.post('/courses', { code, title, description, status }),
+
+  /** PUT /courses/{id}: Cập nhật thông tin môn học */
+  updateCourse: (courseId, { code, title, description, status }) =>
+    axiosClient.put(`/courses/${courseId}`, { code, title, description, status }),
+
+  /** DELETE /courses/{id}: Xóa môn học hoặc chuyển sang INACTIVE nếu đã có ghi danh */
+  deleteCourse: (courseId) =>
+    axiosClient.delete(`/courses/${courseId}`),
+
+  /** POST /courses/{id}/lessons: Thêm bài học mới */
+  createLesson: (courseId, { title, orderIndex = 1 }) =>
+    axiosClient.post(`/courses/${courseId}/lessons`, { title, order_index: orderIndex }),
+
+  /** PUT /courses/{id}/lessons/{lesson_id}: Sửa bài học */
+  updateLesson: (courseId, lessonId, { title, orderIndex }) =>
+    axiosClient.put(`/courses/${courseId}/lessons/${lessonId}`, { title, order_index: orderIndex }),
+
+  /** DELETE /courses/{id}/lessons/{lesson_id}: Xóa bài học */
+  deleteLesson: (courseId, lessonId) =>
+    axiosClient.delete(`/courses/${courseId}/lessons/${lessonId}`),
+
+  /** POST /courses/{id}/lessons/{lesson_id}/topics: Thêm chủ đề mới */
+  createTopic: (courseId, lessonId, { name, description }) =>
+    axiosClient.post(`/courses/${courseId}/lessons/${lessonId}/topics`, { name, description }),
+
+  /** PUT /courses/{id}/topics/{topic_id}: Sửa chủ đề */
+  updateTopic: (courseId, topicId, { name, description }) =>
+    axiosClient.put(`/courses/${courseId}/topics/${topicId}`, { name, description }),
+
+  /** DELETE /courses/{id}/topics/{topic_id}: Xóa chủ đề */
+  deleteTopic: (courseId, topicId) =>
+    axiosClient.delete(`/courses/${courseId}/topics/${topicId}`),
+
+  /** POST /courses/{id}/lessons/{lesson_id}/contents: Soạn / cập nhật nội dung lý thuyết Markdown */
+  saveLessonContent: (courseId, lessonId, { body, contentType = 'MARKDOWN', contentId }) =>
+    axiosClient.post(
+      `/courses/${courseId}/lessons/${lessonId}/contents`,
+      { body, content_type: contentType },
+      { params: contentId ? { content_id: contentId } : {} }
+    ),
 };

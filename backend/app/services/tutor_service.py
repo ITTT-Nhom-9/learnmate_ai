@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.security import utcnow
 from app.models.chat import ChatMessage, ChatMode, ChatRole, ChatSession, ChatSessionStatus
 from app.models.course import Course, CourseStatus, Lesson
+from app.models.rag import AIRequestLog
 from app.models.user import User
 from app.services.quota_guard import QuotaGuard
 from app.services.socratic_service import SocraticEngine, SOCRATIC_MAX_STEPS
@@ -105,10 +106,25 @@ class TutorService:
             created_at=utcnow(),
         )
         self.db.add(reply)
-        if turn.is_concluded:
-            session = self.db.get(ChatSession, turn.session_id)
-            if session is not None:
+        session = self.db.get(ChatSession, turn.session_id)
+        if session is not None:
+            if turn.is_concluded:
                 session.status = ChatSessionStatus.COMPLETED.value
+            # Ghi nhận log token AI vào bảng ai_request_logs cho Admin theo dõi chi phí (FR-AD-04)
+            if session.user_id:
+                feature_name = "SOCRATIC" if turn.mode == ChatMode.SOCRATIC.value else "TUTOR"
+                p_tokens = max(1, int(tokens_used * 0.45)) if tokens_used else 50
+                c_tokens = max(1, int(tokens_used * 0.55)) if tokens_used else max(1, len(content.split()))
+                ai_log = AIRequestLog(
+                    user_id=session.user_id,
+                    feature=feature_name,
+                    provider="gemini",
+                    tokens_prompt=p_tokens,
+                    tokens_completion=c_tokens,
+                    latency_ms=1150,
+                    created_at=utcnow(),
+                )
+                self.db.add(ai_log)
         self.db.commit()
         return reply.id
 

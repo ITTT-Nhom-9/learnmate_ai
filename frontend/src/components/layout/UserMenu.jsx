@@ -82,7 +82,7 @@ export default function UserMenu({ variant = 'header' }) {
           </div>
           {user?.role === 'ADMIN' && (
             <Link
-              to="/admin/users"
+              to="/admin/courses"
               role="menuitem"
               onClick={() => setOpen(false)}
               className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"

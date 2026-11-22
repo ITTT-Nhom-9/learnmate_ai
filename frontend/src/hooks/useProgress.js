@@ -9,11 +9,16 @@ import { getErrorMessage } from '../utils/apiError';
 export function useProgress(courseId) {
   const [summary, setSummary] = useState(null);
   const [radar, setRadar] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(courseId));
   const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
-    if (!courseId) return;
+    if (!courseId) {
+      setLoading(false);
+      setSummary(null);
+      setRadar(null);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
