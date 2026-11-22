@@ -10,10 +10,18 @@ import ProtectedRoute, { GuestRoute } from './ProtectedRoute';
 
 // Trang chi tiết môn kéo theo thư viện Markdown/KaTeX/Prism (nặng) -> chỉ tải khi người dùng mở môn học
 const CourseDetailPage = lazy(() => import('../features/courses/CourseDetailPage'));
+const CourseDocumentsPage = lazy(() => import('../features/courses/CourseDocumentsPage')); // RAG cho sinh viên
 const TutorChatPage = lazy(() => import('../features/tutor/TutorChatPage'));
 const QuizTakePage = lazy(() => import('../features/quiz/QuizTakePage')); // SCR-05
 const QuizResultPage = lazy(() => import('../features/quiz/QuizResultPage')); // SCR-06
 const ProgressDashboardPage = lazy(() => import('../features/progress/ProgressDashboardPage')); // SCR-07
+
+// SCR-08: khu vực quản trị, tách chunk riêng vì sinh viên không bao giờ tải tới
+const AdminLayout = lazy(() => import('../features/admin/AdminLayout'));
+const CourseManagementPage = lazy(() => import('../features/admin/CourseManagementPage'));
+const UserManagementPage = lazy(() => import('../features/admin/UserManagementPage'));
+const PromptConfigPage = lazy(() => import('../features/admin/PromptConfigPage'));
+const TokenLogPage = lazy(() => import('../features/admin/TokenLogPage'));
 
 const pageFallback = (
   <div className="flex justify-center py-24 text-slate-400">
@@ -33,6 +41,15 @@ export default function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Navigate to="/courses" replace />} />
           <Route path="/courses" element={<CourseCatalogPage />} />
+          {/* Tài liệu PDF & hỏi đáp có trích dẫn trang (FR-RG-*): sinh viên đã ghi danh dùng, không cần quyền Admin */}
+          <Route
+            path="/courses/:courseId/documents"
+            element={
+              <Suspense fallback={pageFallback}>
+                <CourseDocumentsPage />
+              </Suspense>
+            }
+          />
           {/* "/*" bắt cả /courses/:id và /courses/:id/lessons/:lessonId bằng một trang, đổi bài không remount */}
           <Route
             path="/courses/:courseId/*"
@@ -81,6 +98,25 @@ export default function AppRoutes() {
               <ProgressDashboardPage />
             </Suspense>
           } />
+        </Route>
+      </Route>
+
+      {/* SCR-08: Quản trị viên (RBAC: sinh viên bị chuyển về /courses) */}
+      <Route element={<ProtectedRoute roles={['ADMIN']} />}>
+        <Route
+          path="/admin"
+          element={
+            <Suspense fallback={pageFallback}>
+              <AdminLayout />
+            </Suspense>
+          }
+        >
+          <Route index element={<Navigate to="courses" replace />} />
+          <Route path="courses" element={<CourseManagementPage />} />
+          <Route path="users" element={<UserManagementPage />} />
+          <Route path="prompts" element={<PromptConfigPage />} />
+          <Route path="tokens" element={<TokenLogPage />} />
+          <Route path="documents" element={<CourseManagementPage initialTab="documents" />} />
         </Route>
       </Route>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { RefreshCw, AlertTriangle, LineChart, History } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { RefreshCw, AlertTriangle, LineChart, History, BookOpen } from 'lucide-react';
 import Spinner from '../../components/common/Spinner';
 import Button from '../../components/common/Button';
 import CourseSelector from './CourseSelector';
@@ -73,11 +74,23 @@ export default function ProgressDashboardPage() {
         </div>
       )}
 
-      {/* Chưa chọn môn */}
+      {/* Chưa chọn môn hoặc tài khoản mới chưa ghi danh */}
       {!loading && !error && !summary && (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <LineChart size={40} className="mx-auto text-slate-300" />
-          <p className="mt-3 text-sm text-slate-500">Chọn một môn học để xem tiến độ.</p>
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
+          <LineChart size={44} className="mx-auto text-slate-300" />
+          <h2 className="mt-3 text-base font-semibold text-slate-800">Chưa có dữ liệu tiến độ</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Bạn chưa chọn môn học hoặc chưa ghi danh môn nào. Hãy chọn môn hoặc khám phá danh mục môn học để bắt đầu lộ trình học tập.
+          </p>
+          <div className="mt-4 flex justify-center">
+            <Link
+              to="/courses"
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+            >
+              <BookOpen size={16} aria-hidden="true" />
+              Khám phá danh mục môn học
+            </Link>
+          </div>
         </div>
       )}
 

@@ -16,8 +16,10 @@ export default function CourseSelector({ selectedCourseId, onSelect }) {
       .getCourses()
       .then((data) => {
         if (cancelled) return;
-        // Chỉ hiển thị môn đã ghi danh
-        const enrolled = (data.courses || []).filter((c) => c.is_enrolled);
+        // Chỉ hiển thị môn đã ghi danh và đang hoạt động (không hiển thị môn bị ẩn/lưu trữ)
+        const enrolled = (data.courses || []).filter(
+          (c) => c.is_enrolled && c.status !== 'INACTIVE'
+        );
         setCourses(enrolled);
         // Tự chọn môn đầu tiên nếu chưa chọn
         if (!selectedCourseId && enrolled.length > 0) {

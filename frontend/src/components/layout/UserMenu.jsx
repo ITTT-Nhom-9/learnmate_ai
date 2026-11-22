@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, LogOut, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronDown, LogOut, ShieldCheck, User } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../../hooks/useAuth';
 import { getInitials } from '../../utils/formatters';
@@ -79,6 +80,17 @@ export default function UserMenu({ variant = 'header' }) {
             <p className="truncate text-xs text-slate-500">{user?.email}</p>
             <p className="mt-1 text-xs font-medium text-blue-600">{ROLE_LABEL[user?.role] || user?.role}</p>
           </div>
+          {user?.role === 'ADMIN' && (
+            <Link
+              to="/admin/courses"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <ShieldCheck size={16} aria-hidden="true" />
+              Trang quản trị
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"

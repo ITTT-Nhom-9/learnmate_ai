@@ -38,6 +38,9 @@ export function getCourseIcon(course) {
 export function filterCourses(courses, { query, filter }) {
   const q = normalizeText(query);
   return courses.filter((course) => {
+    // Ẩn các môn có trạng thái INACTIVE khỏi danh mục học sinh
+    if (course.status && course.status === 'INACTIVE') return false;
+
     const status = getCourseStatus(course);
     if (filter === 'learning' && status !== 'IN_PROGRESS') return false;
     if (filter === 'done' && status !== 'COMPLETED') return false;

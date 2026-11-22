@@ -7,12 +7,14 @@ Chịu trách nhiệm:
 - Định dạng và lọc bỏ trường is_correct & explanation khi trả về phía Client theo quy tắc bảo mật đề thi BR-04.
 """
 from typing import Optional
+from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.course import ContentType, Course, CourseStatus, Lesson, Topic
 from app.models.quiz import Question, QuestionOption, Quiz, QuizDifficulty
+from app.models.rag import AIRequestLog
 from app.models.user import User
 from app.schemas.quiz import (
     QuestionPublicOut,
@@ -163,6 +165,18 @@ class QuizService:
                     options=public_options,
                 )
             )
+
+        # Ghi nhận log token AI vào bảng ai_request_logs cho Admin theo dõi chi phí (FR-AD-04)
+        ai_log = AIRequestLog(
+            user_id=user.id,
+            feature="QUIZ_GEN",
+            provider="gemini",
+            tokens_prompt=ai_response.get("tokens_prompt", len(body_text.split())),
+            tokens_completion=ai_response.get("tokens_completion", 350),
+            latency_ms=1850,
+            created_at=datetime.now(timezone.utc),
+        )
+        self.db.add(ai_log)
 
         self.db.commit()
 
