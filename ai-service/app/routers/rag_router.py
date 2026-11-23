@@ -1,10 +1,11 @@
 """Router API cho phân hệ RAG trong AI Microservice (TK-25 / SDD)."""
 import time
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 from fastapi import APIRouter, Depends
 
 from app.adapters import LLMMessage, LLMProvider, get_llm_adapter
+from app.core.prompt_xml import UNTRUSTED_DATA_RULE, xml_text
 from app.core.security import verify_internal_api_key
 from app.schemas.rag_schema import (
     RAGQueryRequestDTO,
@@ -41,7 +42,7 @@ def get_default_rag_system_prompt() -> str:
     return FALLBACK_RAG_SYSTEM_PROMPT
 
 
-def _prepare_rag_prompt(request: RAGQueryRequestDTO) -> Tuple[str, List[LLMMessage]]:
+def _prepare_rag_prompt(request: RAGQueryRequestDTO) -> List[LLMMessage]:
     """Lắp ghép System Prompt, ngữ cảnh tài liệu kèm số trang và câu hỏi sinh viên."""
     base_prompt = (request.system_prompt or get_default_rag_system_prompt()).strip()
 
@@ -53,20 +54,14 @@ def _prepare_rag_prompt(request: RAGQueryRequestDTO) -> Tuple[str, List[LLMMessa
         )
     context_str = "\n\n".join(context_lines)
 
-    system_prompt = (
-        f"{base_prompt}\n\n"
-        f"<document_context>\n{context_str}\n</document_context>"
-    )
+    system_prompt = f"{base_prompt}\n\n{UNTRUSTED_DATA_RULE}"
+    user_message = xml_text("student_query", request.query.strip())
+    user_message += "\n\n" + xml_text("document_context", context_str)
 
-    user_message = (
-        f"<student_query>\n{request.query.strip()}\n</student_query>"
-    )
-
-    messages = [
+    return [
         LLMMessage(role="system", content=system_prompt),
         LLMMessage(role="user", content=user_message),
     ]
-    return system_prompt, messages
 
 
 def get_rag_llm_adapter() -> LLMProvider:
@@ -117,10 +112,8 @@ async def query_rag_document(
             latency_ms=max(1, elapsed_ms),
         )
 
-    system_prompt, messages = _prepare_rag_prompt(request)
-
     llm_resp = await adapter.chat(
-        messages=messages,
+        messages=_prepare_rag_prompt(request),
         temperature=request.temperature,
         max_tokens=request.max_tokens,
     )

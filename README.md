@@ -123,6 +123,14 @@ learnmate_ai/
    copy .env.example .env    # Trên Windows PowerShell / CMD
    # hoặc: cp .env.example .env  # Trên Linux / macOS
    ```
+   Tạo hai giá trị ngẫu nhiên độc lập cho `JWT_SECRET` và `INTERNAL_API_KEY` trong `.env`. Có thể chạy lệnh sau hai lần và dùng một kết quả cho mỗi biến.
+
+   ```bash
+   python -c "import secrets; print(secrets.token_urlsafe(48))"
+   ```
+
+   Đặt khóa nhà cung cấp AI trong `GEMINI_API_KEY` hoặc `OPENAI_API_KEY` theo `LLM_PROVIDER`. Đặt `CORS_ORIGINS` thành danh sách origin frontend đầy đủ, gồm giao thức và cổng nếu có. Giữ `.env` ngoài Git.
+
 3. Khởi động đồng thời 4 container dịch vụ:
    ```bash
    docker compose up -d --build
@@ -135,7 +143,7 @@ learnmate_ai/
    - Giao diện người dùng (Frontend): http://localhost:5173 (hoặc http://localhost:80)
    - Máy chủ nghiệp vụ (Backend API Docs): http://localhost:8080/api/v1/docs
    - Kiểm tra sức khỏe Backend: http://localhost:8080/api/v1/health
-   - Dịch vụ trí tuệ nhân tạo (AI Health): http://localhost:8000/ai/health
+   - Dịch vụ AI chạy trong mạng Compose và được Backend truy cập tại `http://ai-service:8000`.
    - Cơ sở dữ liệu MySQL: Cổng kết nối ngoài mặc định là `3306` (nếu máy tính đã có MySQL cài sẵn gây trùng cổng, chỉ cần đổi trong `.env` thành `MYSQL_HOST_PORT=3307`)
 
 ### 4.3. Nạp dữ liệu mẫu

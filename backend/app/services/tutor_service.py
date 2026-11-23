@@ -59,7 +59,7 @@ class TutorService:
         remaining = QuotaGuard(self.db).ensure_available(user.id)
 
         session = self._get_or_create_session(user.id, lesson.id, mode)
-        history = self._recent_messages(session.id, settings.TUTOR_HISTORY_WINDOW)
+        history = self._recent_messages(user.id, session.id, settings.TUTOR_HISTORY_WINDOW)
 
         previous_hint_level = session.hint_level or 0
         if mode == ChatMode.SOCRATIC.value:
@@ -151,7 +151,7 @@ class TutorService:
             .order_by(ChatSession.id.desc())
             .limit(1)
         )
-        messages = self._recent_messages(session.id, limit) if session is not None else []
+        messages = self._recent_messages(user.id, session.id, limit) if session is not None else []
         return session, messages, QuotaGuard(self.db).remaining(user.id)
 
     # --------------------------------------------------------------------------
@@ -195,11 +195,12 @@ class TutorService:
             self.db.flush()
         return session
 
-    def _recent_messages(self, session_id: int, limit: int) -> list[ChatMessage]:
+    def _recent_messages(self, user_id: int, session_id: int, limit: int) -> list[ChatMessage]:
         """N tin nhan gan nhat (dung index idx_session_created), tra ve theo thu tu thoi gian tang dan."""
         rows = self.db.scalars(
             select(ChatMessage)
-            .where(ChatMessage.session_id == session_id)
+            .join(ChatSession)
+            .where(ChatMessage.session_id == session_id, ChatSession.user_id == user_id)
             .order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
             .limit(limit)
         ).all()

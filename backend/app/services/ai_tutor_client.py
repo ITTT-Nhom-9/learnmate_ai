@@ -69,10 +69,18 @@ class AITutorClient:
                 data = json.loads(line[len("data:"):].strip())
             except json.JSONDecodeError:
                 continue
+            if not isinstance(data, dict):
+                continue
             if event == "error":
+                error_code = data.get("error_code")
+                if not isinstance(error_code, str):
+                    error_code = None
                 raise AIServiceError(
-                    data.get("error_code") or "AI_STREAM_ERROR",
-                    data.get("detail") or "Dịch vụ AI gặp lỗi khi sinh câu trả lời",
+                    error_code if error_code in {
+                        "LLM_TIMEOUT", "LLM_RATE_LIMIT", "LLM_UPSTREAM_ERROR",
+                        "LLM_CONFIGURATION_ERROR", "CIRCUIT_BREAKER_OPEN",
+                    } else "AI_STREAM_ERROR",
+                    "Dịch vụ AI gặp lỗi khi sinh câu trả lời",
                 )
             yield AIStreamChunk(
                 delta=data.get("delta") or "",

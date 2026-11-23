@@ -21,6 +21,51 @@ API = "/api/v1/auth"
 PASSWORD = "MatKhau@123"
 
 
+def test_cors_accepts_only_configured_origins():
+    from app.core.config import settings
+
+    client = TestClient(app)
+    origin = settings.cors_origins_list[0]
+    headers = {
+        "Origin": origin,
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Authorization, Content-Type",
+    }
+    allowed = client.options(f"{API}/token", headers=headers)
+    assert allowed.status_code == 200
+    assert allowed.headers["access-control-allow-origin"] == origin
+    assert "access-control-allow-credentials" not in allowed.headers
+
+    headers["Origin"] = "https://unlisted.example"
+    rejected = client.options(f"{API}/token", headers=headers)
+    assert rejected.status_code == 400
+    assert "access-control-allow-origin" not in rejected.headers
+
+
+def test_oauth_form_login_works_with_bearer_dependency(client):
+    register(client)
+    login_response = client.post(f"{API}/token", data={
+        "grant_type": "password", "username": "sv@univ.edu.vn", "password": PASSWORD,
+    })
+    assert login_response.status_code == 200
+    tokens = login_response.json()
+    response = client.post(
+        f"{API}/logout",
+        json={"refresh_token": tokens["refresh_token"]},
+        headers={"Authorization": f"Bearer {tokens['access_token']}"},
+    )
+    assert response.status_code == 200
+
+
+def test_invalid_registration_does_not_echo_password(client):
+    marker = "sensitive-test-input" * 4
+    response = client.post(f"{API}/register", json={
+        "email": "sv@univ.edu.vn", "password": marker, "full_name": "Test Student",
+    })
+    assert response.status_code == 422
+    assert marker not in response.text
+
+
 @pytest.fixture()
 def db_factory():
     """SQLite in-memory dung chung 1 connection (StaticPool) cho moi test."""

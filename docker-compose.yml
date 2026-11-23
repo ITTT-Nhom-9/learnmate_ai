@@ -10,7 +10,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD:-learnmate_pass}
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
-      - "${MYSQL_HOST_PORT:-3306}:3306"
+      - "127.0.0.1:${MYSQL_HOST_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
@@ -33,9 +33,7 @@ services:
       - LLM_MODEL=${LLM_MODEL:-gemini-3.5-flash-lite}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-LM_Internal_Key_987654}
-    ports:
-      - "${AI_SERVICE_PORT:-8000}:8000"
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
     networks:
       - learnmate-net
 
@@ -50,8 +48,9 @@ services:
       DB_USER: ${DB_USER:-learnmate_user}
       DB_PASSWORD: ${DB_PASSWORD:-learnmate_pass}
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-service:8000}
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-LM_Internal_Key_987654}
-      JWT_SECRET: ${JWT_SECRET:-YourSuperSecretKeyMin32Chars2026!}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     networks:

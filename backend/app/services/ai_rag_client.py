@@ -34,11 +34,7 @@ class AIRAGClient:
                     headers={"X-API-Key": self.api_key, "Content-Type": "application/json"},
                 )
                 if response.status_code != 200:
-                    try:
-                        err_body = response.json()
-                        detail = err_body.get("detail") or "Dịch vụ AI gặp lỗi khi trả lời câu hỏi RAG"
-                    except Exception:
-                        detail = response.text or f"Mã lỗi HTTP {response.status_code}"
+                    detail = f"AI service returned HTTP {response.status_code}"
                     raise AIRAGServiceError("AI_RAG_ERROR", detail, status_code=response.status_code)
 
                 return response.json()

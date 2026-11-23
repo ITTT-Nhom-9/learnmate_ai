@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from app.adapters import LLMMessage, LLMProvider, get_llm_adapter
-from app.core.exceptions import AIException, mask_sensitive_text
+from app.core.exceptions import AIException
+from app.core.prompt_xml import UNTRUSTED_DATA_RULE, xml_text
 from app.core.security import verify_internal_api_key
 from app.schemas.tutor_schema import LLMUsageDTO, TutorRequestDTO, TutorResponseDTO
 
@@ -41,19 +42,16 @@ def get_default_tutor_system_prompt() -> str:
 def _prepare_prompt_and_messages(request: TutorRequestDTO) -> Tuple[str, List[LLMMessage]]:
     """Ráp system prompt, ngữ cảnh bài học và cô lập câu hỏi trong thẻ <student_query>."""
     base_prompt = (request.system_prompt or get_default_tutor_system_prompt()).strip()
+    system_prompt = f"{base_prompt}\n\n{UNTRUSTED_DATA_RULE}"
+    query = xml_text("student_query", request.message.strip())
     if request.lesson_context and request.lesson_context.strip():
-        system_prompt = (
-            f"{base_prompt}\n\n"
-            f"<lesson_context>\n{request.lesson_context.strip()}\n</lesson_context>"
-        )
-    else:
-        system_prompt = base_prompt
+        query += "\n\n" + xml_text("lesson_context", request.lesson_context.strip())
 
     messages: List[LLMMessage] = [
-        LLMMessage(role=item.role, content=item.content) for item in request.history
+        LLMMessage(role=item.role, content=xml_text("history_message", item.content)) for item in request.history
     ]
     messages.append(
-        LLMMessage(role="user", content=f"<student_query>\n{request.message.strip()}\n</student_query>")
+        LLMMessage(role="user", content=query)
     )
     return system_prompt, messages
 
@@ -147,10 +145,10 @@ async def tutor_stream(
                 "done": True,
             }
             yield f"event: error\ndata: {json.dumps(err_payload, ensure_ascii=False)}\n\n"
-        except Exception as exc:
+        except Exception:
             err_payload = {
                 "error_code": "STREAM_ERROR",
-                "detail": mask_sensitive_text(str(exc)),
+                "detail": "AI stream failed",
                 "done": True,
             }
             yield f"event: error\ndata: {json.dumps(err_payload, ensure_ascii=False)}\n\n"

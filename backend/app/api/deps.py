@@ -1,13 +1,16 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.core.security import ACCESS_TOKEN_TYPE, decode_token, JWTError
 from app.models.user import User, UserRole, UserStatus
 
 
-bearer_scheme = HTTPBearer(auto_error=False)
+bearer_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR.lstrip('/')}/auth/token", auto_error=False
+)
 
 
 def _unauthorized(detail: str) -> HTTPException:
@@ -19,15 +22,15 @@ def _unauthorized(detail: str) -> HTTPException:
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    token: str | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User:
     """Xac thuc Access Token tu header Authorization: Bearer <JWT>."""
-    if credentials is None or credentials.scheme.lower() != "bearer":
+    if not token:
         raise _unauthorized("Thiếu Access Token")
 
     try:
-        payload = decode_token(credentials.credentials)
+        payload = decode_token(token)
     except JWTError:
         raise _unauthorized("Access Token không hợp lệ hoặc đã hết hạn")
 

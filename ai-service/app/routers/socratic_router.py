@@ -12,7 +12,8 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from app.adapters import LLMMessage, LLMProvider, get_llm_adapter
-from app.core.exceptions import AIException, mask_sensitive_text
+from app.core.exceptions import AIException
+from app.core.prompt_xml import UNTRUSTED_DATA_RULE, xml_text
 from app.core.security import verify_internal_api_key
 from app.schemas.socratic_schema import (
     SocraticFeedback,
@@ -93,20 +94,19 @@ def _prepare_socratic_context(
             "trình bày lời giải chính xác, chỉ ra điểm sinh viên đã làm tốt và điểm cần lưu ý.\n"
         )
 
-    system_prompt = base_prompt + step_directive
+    system_prompt = base_prompt + step_directive + "\n\n" + UNTRUSTED_DATA_RULE
+    query = xml_text("student_query", request.message.strip())
 
     if request.lesson_context and request.lesson_context.strip():
-        system_prompt += (
-            f"\n\n<lesson_context>\n{request.lesson_context.strip()}\n</lesson_context>"
-        )
+        query += "\n\n" + xml_text("lesson_context", request.lesson_context.strip())
 
     messages: List[LLMMessage] = [
-        LLMMessage(role=item.role, content=item.content) for item in request.history
+        LLMMessage(role=item.role, content=xml_text("history_message", item.content)) for item in request.history
     ]
     messages.append(
         LLMMessage(
             role="user",
-            content=f"<student_query>\n{request.message.strip()}\n</student_query>",
+            content=query,
         )
     )
 
@@ -240,10 +240,10 @@ async def socratic_stream(
                 "done": True,
             }
             yield f"event: error\ndata: {json.dumps(err_payload, ensure_ascii=False)}\n\n"
-        except Exception as exc:
+        except Exception:
             err_payload = {
                 "error_code": "STREAM_ERROR",
-                "detail": mask_sensitive_text(str(exc)),
+                "detail": "AI stream failed",
                 "done": True,
             }
             yield f"event: error\ndata: {json.dumps(err_payload, ensure_ascii=False)}\n\n"

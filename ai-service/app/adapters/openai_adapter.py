@@ -25,7 +25,6 @@ from app.core.exceptions import (
     LLMRateLimitError,
     LLMTimeoutError,
     LLMUpstreamError,
-    mask_sensitive_text,
 )
 
 logger = logging.getLogger("ai-service.openai")
@@ -84,14 +83,13 @@ class OpenAIAdapter(LLMProvider):
     def _map_exception(exc: Exception) -> AIException:
         if isinstance(exc, AIException):
             return exc
-        safe_msg = mask_sensitive_text(str(exc))
         if isinstance(exc, (asyncio.TimeoutError, TimeoutError, APITimeoutError)):
-            return LLMTimeoutError(f"OpenAI request timed out: {safe_msg}")
+            return LLMTimeoutError(f"OpenAI request timed out")
         if isinstance(exc, RateLimitError):
-            return LLMRateLimitError(f"OpenAI API rate limit exceeded: {safe_msg}")
+            return LLMRateLimitError(f"OpenAI API rate limit exceeded")
         if isinstance(exc, AuthenticationError):
             return LLMConfigurationError("OpenAI API authentication failed; verify OPENAI_API_KEY")
-        return LLMUpstreamError(f"OpenAI API error: {safe_msg}")
+        return LLMUpstreamError(f"OpenAI API error")
 
     async def chat(
         self,
@@ -144,7 +142,7 @@ class OpenAIAdapter(LLMProvider):
                     "OpenAI chat attempt %d/%d failed: %s",
                     attempt + 1,
                     self.max_retries + 1,
-                    mask_sensitive_text(str(exc)),
+                    type(exc).__name__,
                 )
                 retryable = isinstance(
                     exc, (asyncio.TimeoutError, TimeoutError, APITimeoutError, RateLimitError, InternalServerError)
