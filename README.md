@@ -29,7 +29,8 @@ LearnMate AI là nền tảng trợ lý học tập thông minh ứng dụng tr�
 - AI Microservice: Python 3.11+, FastAPI (Stateless), Adapter Pattern (OpenAI GPT-4o, Google Gemini 1.5 Pro), RAG Pipeline
 - Cơ sở dữ liệu: MySQL 8.0 (Charset: utf8mb4, Collation: utf8mb4_unicode_ci)
 - Frontend SPA: React 18, Vite, Tailwind CSS, Axios Client, Lucide Icons
-- DevOps & CI/CD: Docker, Docker Compose đa container, GitHub Actions tự động kiểm thử
+- DevOps & Đóng gói (TK-28): Docker Multi-stage Builds (Node 20 Alpine -> Nginx Alpine; Python 3.11-slim Builder -> Runner non-root), Docker Compose bridge network `learnmate-net`, Healthcheck probe tự động
+- Quản lý phiên bản & CI/CD: Git Monorepo, GitHub Actions tự động kiểm thử
 
 ---
 
