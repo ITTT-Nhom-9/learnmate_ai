@@ -1,4 +1,6 @@
 import os
+import secrets
+from urllib.parse import urlsplit
 from pathlib import Path
 from typing import Optional, List
 from pydantic import Field, model_validator
@@ -55,13 +57,13 @@ class Settings(BaseSettings):
         return self
     
     # Security & JWT
-    JWT_SECRET: str = Field(default="YourSuperSecretKeyMin32Chars2026!")
+    JWT_SECRET: str = Field(default_factory=lambda: secrets.token_urlsafe(48), repr=False)
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # Internal communication
-    INTERNAL_API_KEY: str = Field(default="LM_Internal_Key_987654")
+    INTERNAL_API_KEY: str = Field(default="", repr=False)
     AI_SERVICE_URL: str = Field(default="http://localhost:8000")
     AI_SERVICE_TIMEOUT_SECONDS: float = Field(default=60.0)
 
@@ -80,11 +82,33 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        return [o.strip().rstrip("/") for o in self.CORS_ORIGINS.split(",") if o.strip()]
+        origins = [origin.strip().rstrip("/") for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        for origin in origins:
+            parsed = urlsplit(origin)
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not parsed.hostname
+                or parsed.username is not None
+                or parsed.path or parsed.query or parsed.fragment
+                or any(char in origin for char in "*?#")
+                or any(char.isspace() for char in origin)
+            ):
+                raise ValueError("CORS_ORIGINS must contain explicit HTTP(S) origins")
+        return origins
+
+    @model_validator(mode="after")
+    def validate_jwt_secret(self) -> "Settings":
+        if len(self.JWT_SECRET.strip()) < 32 or self.JWT_SECRET in {
+            "YourSuperSecretKeyMin32Chars2026!",
+            "your_jwt_secret_key_minimum_32_chars_length",
+        }:
+            raise ValueError("Configure a unique JWT_SECRET with at least 32 characters")
+        return self
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILES,
         env_file_encoding="utf-8",
+        hide_input_in_errors=True,
         extra="ignore"
     )
 

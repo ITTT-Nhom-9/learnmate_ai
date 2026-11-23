@@ -383,6 +383,18 @@ def test_history_is_isolated_per_user(client, seeded):
     assert body["session_id"] is None and body["messages"] == []
 
 
+def test_chat_context_and_history_stay_with_authenticated_student(client, seeded, ai):
+    ask(client, seeded["u1"], seeded["lesson"], message="Private first student message")
+    ask(client, seeded["u2"], seeded["lesson"], message="Second student's question")
+    assert ai.payloads[-1]["history"] == []
+
+    response = client.get(f"{API}/history/{seeded['lesson']}", headers=auth(seeded["u2"]))
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "private, no-store"
+    assert "Private first student message" not in response.text
+    assert "Second student's question" in response.text
+
+
 def test_history_unknown_lesson_returns_404(client, seeded):
     assert client.get(f"{API}/history/9999", headers=auth(seeded["u1"])).status_code == 404
 
@@ -409,10 +421,11 @@ async def test_client_parses_sse_chunks():
 async def test_client_raises_on_error_event():
     with pytest.raises(AIServiceError) as exc:
         async for _ in AITutorClient._parse_sse(_lines(
-            "event: error", 'data: {"error_code": "LLM_TIMEOUT", "detail": "timeout", "done": true}', "",
+            "event: error", 'data: {"error_code": "LLM_TIMEOUT", "detail": "private-upstream-value", "done": true}', "",
         )):
             pass
     assert exc.value.error_code == "LLM_TIMEOUT"
+    assert "private-upstream-value" not in str(exc.value)
 
 
 async def test_client_unreachable_service_raises_unavailable():

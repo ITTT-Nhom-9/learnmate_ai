@@ -40,6 +40,7 @@ User:
 ```
 
 ## 4. Lưu ý tích hợp
-- Code hiện tại của AI Service đã ghép `<lesson_context>` vào system prompt và bọc câu hỏi trong `<student_query>` ở user message.
+- AI Service đặt bài học, đoạn trích PDF và câu hỏi trong thông điệp vai trò `user`. Lịch sử giữ vai trò `user` hoặc `assistant`.
+- Hàm `xml_text` mã hóa `&`, `<` và `>` trong dữ liệu trước khi bọc thẻ. Các tên thẻ được xác định trong mã nguồn.
 - `socratic_system.md` là mẫu prompt dành cho chế độ Socratic; ZIP hiện tại chưa có endpoint/router Socratic riêng để nạp mẫu này.
 - Không dùng thẻ XML để truyền API key, mật khẩu, JWT hoặc dữ liệu bí mật.

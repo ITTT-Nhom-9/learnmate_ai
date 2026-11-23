@@ -20,7 +20,6 @@ from app.core.exceptions import (
     LLMRateLimitError,
     LLMTimeoutError,
     LLMUpstreamError,
-    mask_sensitive_text,
 )
 
 logger = logging.getLogger("ai-service.gemini")
@@ -145,20 +144,19 @@ class GeminiAdapter(LLMProvider):
         if isinstance(exc, AIException):
             return exc
 
-        safe_msg = mask_sensitive_text(str(exc))
         if isinstance(exc, (asyncio.TimeoutError, TimeoutError, google_exceptions.DeadlineExceeded)):
-            return LLMTimeoutError(f"Gemini request timed out: {safe_msg}")
+            return LLMTimeoutError(f"Gemini request timed out")
         if isinstance(exc, google_exceptions.ResourceExhausted):
-            return LLMRateLimitError(f"Gemini API rate limit exceeded: {safe_msg}")
+            return LLMRateLimitError(f"Gemini API rate limit exceeded")
         if isinstance(exc, (google_exceptions.PermissionDenied, google_exceptions.Unauthenticated)):
             return LLMConfigurationError("Gemini API authentication failed; verify GEMINI_API_KEY")
         if isinstance(exc, google_exceptions.InvalidArgument):
             return AIException(
-                message=f"Invalid request to Gemini model: {safe_msg}",
+                message=f"Invalid request to Gemini model",
                 status_code=400,
                 error_code="LLM_INVALID_ARGUMENT",
             )
-        return LLMUpstreamError(f"Gemini API error: {safe_msg}")
+        return LLMUpstreamError(f"Gemini API error")
 
     @staticmethod
     def _is_retryable(exc: Exception) -> bool:
@@ -226,7 +224,7 @@ class GeminiAdapter(LLMProvider):
                     "Gemini chat attempt %d/%d failed: %s",
                     attempt + 1,
                     self.max_retries + 1,
-                    mask_sensitive_text(str(exc)),
+                    type(exc).__name__,
                 )
                 if attempt < self.max_retries and self._is_retryable(exc):
                     await asyncio.sleep(0.5 * (2**attempt))
@@ -290,6 +288,6 @@ class GeminiAdapter(LLMProvider):
             )
         except Exception as exc:
             self.circuit_breaker.record_failure()
-            logger.warning("Gemini stream failed: %s", mask_sensitive_text(str(exc)))
+            logger.warning("Gemini stream failed: %s", type(exc).__name__)
             raise self._map_exception(exc) from exc
 

@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -61,6 +63,18 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         expires_in=tokens.expires_in,
         user=UserBrief.model_validate(user),
     )
+
+
+@router.post("/token", response_model=LoginResponse)
+def issue_oauth_token(
+    form: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    try:
+        payload = LoginRequest(email=form.username, password=form.password)
+    except ValidationError:
+        raise HTTPException(status_code=422, detail="Invalid login credentials format") from None
+    return login(payload, db)
 
 
 @router.post(

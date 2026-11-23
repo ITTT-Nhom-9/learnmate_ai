@@ -18,13 +18,13 @@ ENV_FILES: List[str] = [
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "LearnMate AI - AI Microservice"
-    INTERNAL_API_KEY: str = Field(default="LM_Internal_Key_987654")
+    INTERNAL_API_KEY: str = Field(default="", repr=False)
 
     # LLM Settings
     LLM_PROVIDER: str = Field(default="gemini")
     LLM_MODEL: str = Field(default="gemini-3.5-flash-lite")
-    OPENAI_API_KEY: Optional[str] = Field(default=None)
-    GEMINI_API_KEY: Optional[str] = Field(default=None)
+    OPENAI_API_KEY: Optional[str] = Field(default=None, repr=False)
+    GEMINI_API_KEY: Optional[str] = Field(default=None, repr=False)
 
     # Circuit Breaker & Timeout (Theo SDD Bảng 3 & Bảng 20)
     AI_TIMEOUT_SECONDS: float = Field(default=35.0, ge=1.0, le=120.0)
@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=ENV_FILES,
         env_file_encoding="utf-8",
+        hide_input_in_errors=True,
         extra="ignore",
     )
 

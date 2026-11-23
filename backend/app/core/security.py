@@ -1,7 +1,5 @@
 import base64
 import hmac
-import json
-import time
 import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -33,55 +31,7 @@ except ImportError:
 
     bcrypt = _BcryptFallback()  # type: ignore[assignment]
 
-try:
-    from jose import JWTError, jwt
-except ImportError:
-    class JWTError(Exception):  # type: ignore[no-redef]
-        pass
-
-    def _b64_encode(data: bytes) -> str:
-        return base64.urlsafe_b64encode(data).decode("utf-8").rstrip("=")
-
-    def _b64_decode(data: str) -> bytes:
-        pad = len(data) % 4
-        if pad > 0:
-            data += "=" * (4 - pad)
-        return base64.urlsafe_b64decode(data.encode("utf-8"))
-
-    class _JwtFallback:
-        @staticmethod
-        def encode(claims: dict, key: str, algorithm: str = "HS256") -> str:
-            header = {"typ": "JWT", "alg": algorithm}
-            h_str = _b64_encode(json.dumps(header).encode("utf-8"))
-            c_copy = dict(claims)
-            for k, v in c_copy.items():
-                if hasattr(v, "timestamp"):
-                    c_copy[k] = int(v.timestamp())
-            p_str = _b64_encode(json.dumps(c_copy).encode("utf-8"))
-            msg = f"{h_str}.{p_str}".encode("utf-8")
-            sig = _b64_encode(hmac.new(key.encode("utf-8"), msg, hashlib.sha256).digest())
-            return f"{h_str}.{p_str}.{sig}"
-
-        @staticmethod
-        def decode(token: str, key: str, algorithms=None) -> dict:
-            parts = token.split(".")
-            if len(parts) != 3:
-                raise JWTError("Invalid token format")
-            h_str, p_str, sig_str = parts
-            msg = f"{h_str}.{p_str}".encode("utf-8")
-            expected_sig = _b64_encode(hmac.new(key.encode("utf-8"), msg, hashlib.sha256).digest())
-            if not hmac.compare_digest(sig_str, expected_sig):
-                raise JWTError("Invalid signature")
-            try:
-                payload = json.loads(_b64_decode(p_str).decode("utf-8"))
-            except Exception:
-                raise JWTError("Malformed token payload")
-            exp = payload.get("exp")
-            if exp and exp < time.time():
-                raise JWTError("Token expired")
-            return payload
-
-    jwt = _JwtFallback()  # type: ignore[assignment]
+from jose import JWTError, jwt
 
 from app.core.config import settings
 
@@ -148,7 +98,10 @@ def create_access_token(
 
 def decode_token(token: str) -> dict:
     """Giai ma va xac minh chu ky + han dung. Nem jose.JWTError neu token khong hop le."""
-    return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+    return jwt.decode(
+        token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM],
+        options={"require_exp": True, "require_sub": True},
+    )
 
 
 # ------------------------------------------------------------------------------

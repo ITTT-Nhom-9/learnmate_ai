@@ -337,7 +337,7 @@ def test_cors_echoes_allowed_origin_on_401(client):
     res = client.get(API, headers={"Origin": origin})
     assert res.status_code == 401
     assert res.headers["access-control-allow-origin"] == origin
-    assert res.headers["access-control-allow-credentials"] == "true"
+    assert "access-control-allow-credentials" not in res.headers
 
 
 def test_cors_preflight_allows_frontend_origin(client):

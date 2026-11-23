@@ -8,9 +8,10 @@ Nhiệm vụ:
 import json
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from app.adapters.base_adapter import LLMMessage, LLMProvider
+from app.core.prompt_xml import UNTRUSTED_DATA_RULE, xml_text
 from app.core.exceptions import AIException
 from app.schemas.quiz_schema import QuizBundleOut, QuizGenerationSpec
 
@@ -120,14 +121,13 @@ async def generate_and_validate_quiz(
     context_lines.append(f"\nNội dung bài học:\n{spec.lesson_content}")
 
     user_message = (
-        f"<lesson_context>\n" + "\n".join(context_lines) + f"\n</lesson_context>\n\n"
+        xml_text("lesson_context", "\n".join(context_lines)) + "\n\n"
         f"Hãy sinh bộ đề thi gồm đúng {spec.num_questions} câu hỏi trắc nghiệm độ khó {spec.difficulty.value} "
         f"dưới dạng JSON tuân thủ đúng cấu trúc yêu cầu."
     )
 
     messages = [LLMMessage(role="user", content=user_message)]
 
-    last_error: Optional[Exception] = None
     accumulated_prompt_tokens = 0
     accumulated_comp_tokens = 0
     total_latency = 0
@@ -138,7 +138,7 @@ async def generate_and_validate_quiz(
             logger.info(f"Bắt đầu sinh đề trắc nghiệm (Lần thử {attempt + 1}/{max_retries + 1})...")
             result = await adapter.chat(
                 messages,
-                system_prompt=system_prompt,
+                system_prompt=f"{system_prompt}\n\n{UNTRUSTED_DATA_RULE}",
                 temperature=spec.temperature,
                 response_mime_type="application/json",
             )
@@ -167,10 +167,9 @@ async def generate_and_validate_quiz(
                 total_latency,
             )
 
-        except (ValueError, json.JSONDecodeError, Exception) as exc:
-            last_error = exc
+        except Exception as exc:
             logger.warning(
-                f"Lần thử {attempt + 1} thất bại do lỗi cấu trúc JSON: {exc}. "
+                f"Lần thử {attempt + 1} thất bại do lỗi cấu trúc JSON: {type(exc).__name__}. "
                 + (f"Tiến hành thử lại ({attempt + 1}/{max_retries})..." if attempt < max_retries else "")
             )
             if attempt < max_retries:
@@ -179,7 +178,7 @@ async def generate_and_validate_quiz(
                     LLMMessage(
                         role="user",
                         content=(
-                            f"LƯU Ý QUAN TRỌNG: Lần sinh trước bị lỗi cú pháp ({exc}). "
+                            f"LƯU Ý QUAN TRỌNG: Lần sinh trước bị lỗi cú pháp. "
                             "Bắt buộc trả về duy nhất 1 chuỗi JSON hợp lệ 100%, không có dấu phẩy thừa, "
                             "mọi ký tự backslash trong công thức phải được escape thành \\\\."
                         ),
@@ -188,5 +187,5 @@ async def generate_and_validate_quiz(
 
     raise AIException(
         error_code="QUIZ_SCHEMA_INVALID",
-        message=f"Không thể sinh bộ câu hỏi trắc nghiệm hợp lệ sau {max_retries} lần thử lại. Chi tiết: {last_error}",
+        message=f"Không thể sinh bộ câu hỏi trắc nghiệm hợp lệ sau {max_retries} lần thử lại.",
     )

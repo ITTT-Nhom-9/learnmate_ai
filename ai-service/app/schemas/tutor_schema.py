@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 class ChatMessageDTO(BaseModel):
     """Một lượt tin nhắn trong lịch sử hội thoại gửi từ Backend."""
 
-    role: Literal["system", "user", "assistant"]
+    role: Literal["user", "assistant"]
     content: str = Field(..., min_length=1)
 
 

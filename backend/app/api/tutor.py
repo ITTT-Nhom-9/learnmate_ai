@@ -1,7 +1,7 @@
 import json
 from typing import AsyncIterator
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.concurrency import run_in_threadpool
@@ -17,7 +17,7 @@ from app.services.tutor_service import PreparedTurn, TutorError, TutorService
 router = APIRouter(prefix="/tutor", tags=["AI Tutor"])
 
 SSE_HEADERS = {
-    "Cache-Control": "no-cache",
+    "Cache-Control": "no-store",
     "Connection": "keep-alive",
     "X-Accel-Buffering": "no",
 }
@@ -137,6 +137,7 @@ async def _stream_reply(
     summary="API-10: Lấy lịch sử tin nhắn của phiên chat gần nhất trong bài học",
 )
 def get_history(
+    response: Response,
     lesson_id: int = Path(..., ge=1),
     limit: int = Query(20, ge=1, le=100, description="Số tin nhắn gần nhất (tối đa 100)"),
     current_user: User = Depends(get_current_user),
@@ -146,6 +147,7 @@ def get_history(
         session, messages, quota_remaining = TutorService(db).get_history(current_user, lesson_id, limit)
     except TutorError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message)
+    response.headers["Cache-Control"] = "private, no-store"
     return TutorHistoryResponse(
         session_id=session.id if session else None,
         lesson_id=lesson_id,

@@ -1,6 +1,7 @@
 import logging
 import re
 from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from app.core.config import settings
 
@@ -108,6 +109,10 @@ class LLMUpstreamError(AIException):
 
 def register_exception_handlers(app: FastAPI) -> None:
     """Đăng ký bộ lọc ngoại lệ toàn cục cho ứng dụng FastAPI AI Microservice."""
+
+    @app.exception_handler(RequestValidationError)
+    async def handle_validation_error(_: Request, __: RequestValidationError) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": "Invalid AI request"})
 
     @app.exception_handler(AIException)
     async def handle_ai_exception(request: Request, exc: AIException) -> JSONResponse:

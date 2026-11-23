@@ -1,7 +1,9 @@
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import inspect, text
 from app.core.config import settings
 from app.core.database import Base, engine, ensure_database_exists
@@ -37,8 +39,8 @@ async def lifespan(app: FastAPI):
         tables = list(Base.metadata.tables.keys())
         logger.info(f"[Database] Ket noi CSDL thanh cong tai port {settings.MYSQL_HOST_PORT}.")
         logger.info(f"[Database] Da kiem tra va dong bo {len(tables)} bang: {', '.join(tables)}")
-    except Exception as e:
-        logger.error(f"[Database ERROR] Khong the khoi tao bang CSDL: {e}")
+    except Exception as exc:
+        logger.error("[Database] Khoi tao CSDL that bai (%s)", type(exc).__name__)
     yield
 
 
@@ -52,13 +54,24 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Middleware: chi dinh origin cu the (khong dung "*" khi allow_credentials=True)
+@app.exception_handler(RequestValidationError)
+async def handle_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content={"detail": [
+            {"loc": error["loc"], "type": error["type"], "msg": "Invalid request field"}
+            for error in exc.errors()
+        ]},
+    )
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
+    expose_headers=["Retry-After"],
 )
 
 # Include API v1 router
